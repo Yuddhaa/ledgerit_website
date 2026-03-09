@@ -7,6 +7,7 @@
 	import Toast from '$lib/components/Toast.svelte';
 
 	import tagIcon from '$lib/assets/tag_icon.png';
+	import type { user } from '$lib/utils/types';
 
 	let errorMessage: string = $state('');
 	let isLoggingIn: boolean = $state(false);
@@ -19,7 +20,7 @@
 		interface LoginResponse {
 			access_token: string;
 			refresh_token: string;
-			user: any; // You can define a proper User interface later
+			user: user;
 		}
 		try {
 			isLoggingIn = true;

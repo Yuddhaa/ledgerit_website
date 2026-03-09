@@ -82,11 +82,23 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({ message: 'API Error' }));
-        throw { status: res.status, message: error.message };
+        console.log(JSON.stringify(error))
+        throw { status: res.status, message: error.error };
     }
 
     console.log(`${options.method} ${path} is completed`)
-    return res.json() as Promise<T>;
+
+    const contentType = res.headers.get("content-type") || "";
+
+    let data: any;
+
+    if (contentType.includes("application/json")) {
+        data = await res.json();
+    } else {
+        data = await res.text();
+    }
+
+    return data as T;
 }
 
 /** 

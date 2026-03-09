@@ -1,14 +1,33 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapterVercel from '@sveltejs/adapter-vercel';
+import adapterStatic from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
+
 	kit: {
-		// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-		// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-		adapter: adapter()
+		// If IS_CAPACITOR is true, use Static. Otherwise, use Vercel.
+		adapter: process.env.IS_CAPACITOR
+			? adapterStatic({
+					pages: 'build',
+					assets: 'build',
+					fallback: 'index.html', // Essential for SPA mode
+					precompress: false,
+					strict: true
+				})
+			: adapterVercel(),
+
+		// Capacitor usually expects the app to be at the root or a specific path
+		// paths: {
+		// 	base: ''
+		// },
+
+		prerender: {
+			// This tells SvelteKit not to fail if it can't find
+			// the dynamic [id] routes during the build
+			handleUnseenRoutes: 'ignore'
+		}
 	}
 };
 

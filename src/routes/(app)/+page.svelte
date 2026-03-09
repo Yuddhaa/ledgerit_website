@@ -2,12 +2,12 @@
 	let { data } = $props();
 </script>
 
-<a href="/dashboard">go to dashboard</a>
+<a href="/addBusiness">Add new business</a>
 
 <ul>
 	{#each data.business as b (b.id)}
 		<li>
-			<h2>{b.id} : {b.name}</h2>
+			<a href={`/${b.id}`}>{b.id} : {b.name}</a>
 		</li>
 	{/each}
 </ul>

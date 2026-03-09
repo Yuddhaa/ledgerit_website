@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { logout } from '$lib/api/auth/auth';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 
 	let { children, data } = $props();
@@ -24,7 +25,8 @@
 				}}>logout</button
 			>
 		</li>
-		<li class=""><h2>{data.user.name}</h2></li>
+		<li class=""><h2>{data.user?.name}</h2></li>
+		<li><ThemeToggle /></li>
 	</ul>
 </nav>
 

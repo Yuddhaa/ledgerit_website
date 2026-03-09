@@ -1,3 +1,92 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+/* Category  | Tailwind Class Example */
+/* Buttons   | bg-primary text-background or bg-primary-container text-primary */
+/* Cards     | bg-surface border border-outline-variant */
+/* Text      | text-text-primary or text-text-secondary */
+/* Borders  ,border-outline */
+
+@theme {
+    /* Brand / Actions */
+    --color-primary: #415F91;
+    --color-secondary: #565F71;
+
+    /* Backgrounds */
+    --color-background: #F9F9FF;
+    --color-surface: #ECF0FF;
+    --color-surface-high: #E7E8EE;
+    --color-surface-variant: #E0E2EC;
+
+    /* Text */
+    --color-text-primary: #191C20;
+    --color-text-secondary: #44474E;
+
+    /* Feedback */
+    --color-success: #4C956C;
+    --color-error: #BA1A1A;
+
+    /* Containers */
+    --color-primary-container: #D6E3FF;
+    --color-secondary-container: #DAE2F9;
+    --color-error-container: #FFDAD6;
+
+    /* Accents & Borders */
+    --color-accent: #AAC7FF;
+    --color-border: #C4C6D0;
+    --color-outline: #74777F;
+    --color-outline-variant: #C4C6D0;
+
+    /* Disabled UI State */
+    /* 12% opacity of text color (Light) */
+    --color-disabled: #191C201F;
+    /* 38% opacity of text color (Light) */
+    --color-text-disabled: #191C2061;
+}
+
+/* Enable Dark Mode Variant */
+@variant dark (&:where(.dark, .dark *));
+
+/* Smooth Transition for the whole app */
+body {
+    @apply bg-background text-text-primary transition-colors duration-500;
+}
+
+/* Dark Mode Overrides */
+.dark body {
+    /* Brand / Actions */
+    --color-primary: #AAC7FF;
+    --color-secondary: #BEC6DC;
+
+    /* Backgrounds */
+    --color-background: #111318;
+    --color-surface: #191C20;
+    --color-surface-high: #282A2F;
+    --color-surface-variant: #44474E;
+
+    /* Text */
+    --color-text-primary: #E2E2E9;
+    --color-text-secondary: #C4C6D0;
+
+    /* Feedback */
+    --color-success: #57B07A;
+    --color-error: #FFB4AB;
+
+    /* Containers */
+    --color-primary-container: #284777;
+    --color-secondary-container: #3E4759;
+    --color-error-container: #93000A;
+
+    /* Accents & Borders */
+    --color-accent: #AAC7FF;
+    --color-border: #44474E;
+    --color-outline: #8E9099;
+    --color-outline-variant: #44474E;
+
+    /* Disabled UI State (Dark) */
+    /* 12% opacity of text color (Dark) */
+    --color-disabled: #E2E2E91F;
+    /* 38% opacity of text color (Dark) */
+    --color-text-disabled: #E2E2E961;
+}

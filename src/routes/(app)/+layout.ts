@@ -3,11 +3,12 @@ import { redirect } from "@sveltejs/kit";
 import api from "$lib/api/api";
 import { auth } from "$lib/stores/store.svelte";
 import type { LayoutLoad } from "./$types";
+import type { user } from "$lib/utils/types";
 
 export const ssr = false;
 
 export const load: LayoutLoad = async ({ fetch }) => {
-    console.log("in layoutload")
+    console.log("in / layoutload")
 
     // check if already loggedin
     const token = cookies.get("access_token")
@@ -19,19 +20,20 @@ export const load: LayoutLoad = async ({ fetch }) => {
 
     // if so, set the user context in the store
     try {
-        let user: any;
-        if (!auth.isLoggedIn) {
-            user = await api.Get<any>('/users/me', fetch)
+        let user: { user: user };
+        if (!auth.user) {
+            user = await api.Get<{ user: user }>('/users/me', fetch)
             auth.user = user.user
+        } else {
+            user = { user: auth.user }
         }
 
-        console.log("exiting layoutload")
-        console.log(JSON.stringify(user, null, 4))
+        console.log("exiting  / layoutload")
         return { user: user.user }
     } catch (err: any) {
         cookies.delete("access_token");
         cookies.delete("refresh_token");
-        auth.user = null as any
+        auth.user = null
         auth.isLoggedIn = false
         console.log("in root layout load, err:", err)
     }
