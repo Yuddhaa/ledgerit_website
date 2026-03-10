@@ -4,17 +4,18 @@ import api from "$lib/api/api";
 import { auth } from "$lib/stores/store.svelte";
 import type { LayoutLoad } from "./$types";
 import type { user } from "$lib/utils/types";
+import { log } from "$lib/utils/helpers";
 
 export const ssr = false;
 
 export const load: LayoutLoad = async ({ fetch }) => {
-    console.log("in / layoutload")
+    log("in / layoutload")
 
     // check if already loggedin
-    const token = cookies.get("access_token")
+    const token = await cookies.get("access_token")
     // if not, redirect to login
     if (!token) {
-        console.log("exiting layoutload and -> /login")
+        log("exiting layoutload and -> /login")
         throw redirect(307, "/login")
     }
 
@@ -28,14 +29,14 @@ export const load: LayoutLoad = async ({ fetch }) => {
             user = { user: auth.user }
         }
 
-        console.log("exiting  / layoutload")
+        log("exiting  / layoutload")
         return { user: user.user }
     } catch (err: any) {
         cookies.delete("access_token");
         cookies.delete("refresh_token");
         auth.user = null
         auth.isLoggedIn = false
-        console.log("in root layout load, err:", err)
+        log("in root layout load, err:", err)
     }
 }
 

@@ -1,6 +1,7 @@
 import { browser } from "$app/environment";
 import { PUBLIC_API_V1 } from "$env/static/public";
 import cookies from "$lib/utils/cookies";
+import { log } from "$lib/utils/helpers";
 
 export default {
     /** Get api */
@@ -49,10 +50,11 @@ export default {
 async function api<T>(path: string, options: RequestInit = {}, customFetch?: typeof fetch): Promise<T> {
     const url = `${PUBLIC_API_V1}${path}`;
 
-    console.log(`fetching \n${options.method} :${path},\n options:${JSON.stringify(options, null, 4)} \n\n\n`)
+    // log(`fetching \n${options.method} :${path},\n options:${JSON.stringify(options, null, 4)} \n\n\n`)
+    log(`\n${options.method} ${path} started\n`)
 
     // get access token
-    const token = browser ? cookies.get("access_token") : null
+    const token = browser ? await cookies.get("access_token") : null
 
     // set headers
     const headers = new Headers(options.headers ?? {})
@@ -62,6 +64,9 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
     if (!headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json")
     }
+    // TODO: remove this later __________________________________________________________________________________________________________________________________________________________________________________
+    headers.set("ngrok-skip-browser-warning", "true");
+    // TODO: remove this later __________________________________________________________________________________________________________________________________________________________________________________
 
     // Initial Request
     const fetcher = customFetch || fetch
@@ -73,7 +78,7 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
         if (!ok) throw { status: 401, message: "Unauthorized" };
 
         // Re-read the new token and retry
-        const newToken = cookies.get('access_token');
+        const newToken = await cookies.get('access_token');
         if (!newToken) throw { status: 401, message: "Unauthorized" };
 
         headers.set('Authorization', `Bearer ${newToken}`);
@@ -82,11 +87,11 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
 
     if (!res.ok) {
         const error = await res.json().catch(() => ({ message: 'API Error' }));
-        console.log(JSON.stringify(error))
+        log(JSON.stringify(error))
         throw { status: res.status, message: error.error };
     }
 
-    console.log(`${options.method} ${path} is completed`)
+    log(`${options.method} ${path} is completed`)
 
     const contentType = res.headers.get("content-type") || "";
 
@@ -105,8 +110,8 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
 * handleRefresh refreshs the access token when it is invalid
 * */
 async function handleRefresh(): Promise<boolean> {
-    console.log("handleRefresh is called")
-    const refreshToken = browser ? cookies.get("refresh_token") : null;
+    log("handleRefresh is called")
+    const refreshToken = browser ? await cookies.get("refresh_token") : null;
     if (!refreshToken) {
         redirectToLogin()
         return false
@@ -124,9 +129,9 @@ async function handleRefresh(): Promise<boolean> {
         if (res.ok) {
             const data = await res.json();
             // Store new tokens
-            cookies.set('access_token', data.access_token, "/", 2);
-            cookies.set('refresh_token', data.refresh_token, "/", 35);
-            console.log("handleRefresh is finished")
+            await cookies.set('access_token', data.access_token, "/", 2);
+            await cookies.set('refresh_token', data.refresh_token, "/", 35);
+            log("handleRefresh is finished")
             return true
         }
 
@@ -138,7 +143,7 @@ async function handleRefresh(): Promise<boolean> {
     cookies.delete("access_token")
     cookies.delete("refresh_token")
     redirectToLogin()
-    console.log("handleRefresh is finished")
+    log("handleRefresh is finished")
     return false
 }
 

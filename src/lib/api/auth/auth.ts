@@ -4,7 +4,7 @@ import { auth } from "$lib/stores/store.svelte"
 
 export const logout = async () => {
     console.log("logout api called")
-    const refreshToken = cookies.get("refresh_token")
+    const refreshToken = await cookies.get("refresh_token")
     if (refreshToken) {
         try {
             await api.Post<{ message: string }>("/auth/logout", { "refresh_token": refreshToken })
