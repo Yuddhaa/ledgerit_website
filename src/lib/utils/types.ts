@@ -5,8 +5,10 @@ export interface user {
     phone_number: string,
     google_id: string,
     picture?: string,
+    is_trial_used: boolean,
 }
 
+export type role = 'creator' | 'admin' | 'employee'
 export interface business {
     id: string,
     name: string,
@@ -17,7 +19,9 @@ export interface business {
     is_trial_used: boolean,
     current_subscription_id: string,
     is_offer_used: boolean,
-    offer_code?: string
+    offer_code?: string,
+    role: role,
+    current_balance: number,
 }
 
 export type subscriptions_status = 'inactive' | 'pending' | 'trialing' | 'trialing_pending' | 'active' | 'past_due' | 'paused' | 'canceled' | 'expired' | 'authenticated';

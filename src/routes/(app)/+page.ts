@@ -10,6 +10,7 @@ export const load: PageLoad = async ({ fetch, parent }) => {
         return { business: business.business }
     } catch (err: any) {
         console.log("err:", err)
+        return { business: [] }
     }
 }
 

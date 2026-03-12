@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { theme } from '$lib/stores/store.svelte';
+	import { ui } from '$lib/stores/store.svelte';
 
 	function toggle() {
-		theme.mode = theme.mode === 'dark' ? 'light' : 'dark';
+		ui.theme = ui.theme === 'dark' ? 'light' : 'dark';
 	}
 </script>
 
@@ -12,5 +12,5 @@
          text-sm text-gray-800
          dark:bg-gray-800 dark:text-gray-100"
 >
-	{theme.mode === 'dark' ? '☀️ Light' : '🌙 Dark'}
+	{ui.theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
 </button>

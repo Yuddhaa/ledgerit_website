@@ -46,6 +46,8 @@
 		"@capacitor/android": "^8.2.0",
 		"@capacitor/core": "^8.2.0",
 		"@capacitor/preferences": "^8.0.1",
-		"@capawesome/capacitor-google-sign-in": "^0.1.1"
+		"@capawesome/capacitor-google-sign-in": "^0.1.1",
+		"fuse.js": "^7.1.0",
+		"lucide-svelte": "^0.577.0"
 	}
 }

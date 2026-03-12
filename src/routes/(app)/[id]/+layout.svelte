@@ -1,14 +1,43 @@
 <script lang="ts">
-	let { data, children } = $props();
+	import { goto } from '$app/navigation';
+	import { logout } from '$lib/api/auth/auth';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 
-	let businessId = $derived(data.business.id);
+	let { children, data } = $props();
+
+	let isLoggingOut = $state(false);
 </script>
 
-<nav>
-	<h1>business name:{data.business?.name}</h1>
-	<ul><a href="/">go back</a></ul>
+<nav class="mx-16 flex justify-between">
+	<ul>
+		<h1 class="">My Businesses</h1>
+	</ul>
+	<ul class="flex gap-12">
+		<li>
+			<button
+				class="rounded-xl bg-blue-400 p-2.5 text-white transition-all hover:scale-110"
+				onclick={async () => {
+					isLoggingOut = true;
+					await logout();
+					await goto('/login');
+					isLoggingOut = false;
+				}}>logout</button
+			>
+		</li>
+		<li class=""><h2>{data.user?.name}</h2></li>
+		<li><ThemeToggle /></li>
+	</ul>
 </nav>
 
 {@render children()}
 
-<h2><a href={`/${businessId}/plans`}>update/choose plans</a></h2>
+{#if isLoggingOut}
+	<Toast toastType="loading" text="logging out" />
+{/if}
+
+<button
+	onclick={async () => {
+		await goto('/');
+	}}>go back</button
+>

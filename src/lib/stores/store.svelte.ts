@@ -11,6 +11,7 @@ export const businessStore = $state<{ selected: business | null }>({
     selected: null
 })
 
-export const theme = $state({
-    mode: "light" as "light" | "dark"
+export const ui = $state({
+    theme: "light" as "light" | "dark",
+    showUniversalSettings: false
 });

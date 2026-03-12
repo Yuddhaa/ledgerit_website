@@ -21,12 +21,12 @@ export default {
         }, customFetch),
 
     /** patch api */
-    Patch: <T>(
+    Put: <T>(
         path: string,
         body: unknown, customFetch?: typeof fetch
     ) =>
         api<T>(path, {
-            method: "PATCH",
+            method: "PUT",
             body: JSON.stringify(body),
         }, customFetch),
 

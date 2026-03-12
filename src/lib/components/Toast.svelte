@@ -39,7 +39,7 @@
 </script>
 
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+	class="fixed inset-0 z-999 flex items-center justify-center bg-black/40 backdrop-blur-sm"
 	transition:fade={{ duration: 200 }}
 >
 	<div

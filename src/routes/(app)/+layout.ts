@@ -37,6 +37,7 @@ export const load: LayoutLoad = async ({ fetch }) => {
         auth.user = null
         auth.isLoggedIn = false
         log("in root layout load, err:", err)
+        throw redirect(302, "/login")
     }
 }
 
