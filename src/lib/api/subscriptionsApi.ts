@@ -15,8 +15,9 @@ export interface subscriptionReturn {
     type: "subscription" | "order",
     subscription_id: string,
     razorpay_key: string,
-    razorpay_sub_id: string,
+    razorpay_sub_id?: string,
     short_url?: string,
+    razorpay_order_id?: string,
 }
 
 export default {

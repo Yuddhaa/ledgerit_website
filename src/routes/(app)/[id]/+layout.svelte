@@ -41,3 +41,5 @@
 		await goto('/');
 	}}>go back</button
 >
+<br />
+<a href="./plans">create or update plans</a>

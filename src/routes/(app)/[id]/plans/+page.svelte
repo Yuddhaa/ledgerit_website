@@ -4,8 +4,10 @@
 		type subscriptionBody,
 		type subscriptionReturn
 	} from '$lib/api/subscriptionsApi.js';
+	import PaymentSuccess from '$lib/components/paymentSuccess.svelte';
 	import Toast from '$lib/components/Toast.svelte';
-	import { businessStore } from '$lib/stores/store.svelte';
+	import { auth, businessStore } from '$lib/stores/store.svelte';
+	import { log } from '$lib/utils/helpers.js';
 	import type { basePlan } from '$lib/utils/types.js';
 
 	let { data } = $props();
@@ -26,6 +28,8 @@
 
 	// --- Derived Logic ---
 	const activeAddonPrice = $derived(isYearly ? plans.yearly_addon : plans.monthly_addon);
+
+	let showSuccessOverlay = $state(false);
 
 	// ****************************************************************************************************************
 	// --- for Toast ---
@@ -72,7 +76,7 @@
 	// subscriptions
 	// ****************************************************************************************************************
 	async function handleSelectPlan(planType: 'trial' | 'solo' | 'wholesale' | 'owner') {
-		console.log(`Selecting ${planType}, Extra Members: ${extraMembers}, Yearly: ${isYearly}`);
+		log(`Selecting ${planType}, Extra Members: ${extraMembers}, Yearly: ${isYearly}`);
 		// --- variables
 		let subBody: subscriptionBody = {
 			period: planType === 'owner' ? 'permanent' : isYearly ? 'yearly' : 'monthly',
@@ -130,6 +134,7 @@
 
 				// actual api
 				try {
+					log(`in handle create update:${JSON.stringify(subBody, null, '    ')}`);
 					const sub = await apiToCall(businessId, subBody);
 					if (typeof sub === 'string') {
 						// UI flow for solo : confirm toast -> processing toast -> success toast / fail toast
@@ -144,7 +149,7 @@
 						};
 						toast = true; // success toast for solo plan
 					} else {
-						console.log(`sub: ${JSON.stringify(sub)}`);
+						log(`sub: ${JSON.stringify(sub)}`);
 						await handleRazorpay(sub);
 					}
 				} catch (err: any) {
@@ -183,8 +188,127 @@
 		toast = true; // main warning+confirm toast
 	}
 
-	async function handleRazorpay(sub: subscriptionReturn) {}
+	async function handleRazorpay(sub: subscriptionReturn) {
+		// 1. Close the loading toast before showing Razorpay
+		toast = false;
 
+		let options: any = {
+			key: sub.razorpay_key,
+			name: 'LedgerIt',
+			description: `Plan: ${sub.subscription_id}`,
+			image: '/assets/icon.png', // Or your logo URL
+			// Handle both Subscriptions and One-time Orders
+			[sub.type === 'subscription' ? 'subscription_id' : 'order_id']: sub.razorpay_sub_id,
+
+			// Prefill user details from your auth store
+			prefill: {
+				name: auth.user?.name,
+				email: auth.user?.email,
+				contact: auth.user?.phone_number
+			},
+
+			// Theme colors from your layout.css
+			theme: {
+				color: '#415F91' // Your --color-primary
+			},
+
+			handler: async function (_: any) {
+				log('Razorpay says success, starting verification...');
+
+				// Show a loading state while we poll the backend
+				toastParams = {
+					toastType: 'loading',
+					toastMsg: 'Verifying payment with our servers...'
+				};
+				toast = true;
+
+				// Start polling your status route
+				await pollSubscriptionStatus(sub.subscription_id);
+			},
+
+			modal: {
+				ondismiss: function () {
+					log('Payment Modal Dismissed');
+					toastParams = {
+						toastType: 'warning',
+						toastMsg: 'Payment cancelled. Please try again if you wish to subscribe.',
+						close
+					};
+					toast = true;
+				}
+			}
+		};
+		if (sub.type === 'subscription') {
+			options.subscription_id = sub.razorpay_sub_id;
+		} else {
+			log('here in the else');
+			options.order_id = sub.razorpay_order_id;
+		}
+
+		try {
+			// @ts-ignore - Razorpay is added via script tag in app.html
+			const rzp = new Razorpay(options);
+
+			rzp.on('payment.failed', function (response: any) {
+				log('Payment Failed:', response.error);
+				toastParams = {
+					toastType: 'error',
+					toastMsg: `Payment Failed: ${response.error.description}`,
+					close
+				};
+				toast = true;
+			});
+
+			rzp.open();
+		} catch (err) {
+			log('Razorpay initialization failed:', err);
+			toastParams = {
+				toastType: 'error',
+				toastMsg: 'Could not open payment gateway. Check your connection.',
+				close
+			};
+			toast = true;
+		}
+	}
+
+	// Polling function to verify status with the Go backend
+	async function pollSubscriptionStatus(subId: string, maxAttempts = 10) {
+		let attempts = 0;
+
+		const interval = setInterval(async () => {
+			attempts++;
+			try {
+				const res = await subscriptionsApi.status(businessId, subId);
+				if (res.status === 'active') {
+					clearInterval(interval);
+					showSuccessScreen();
+				}
+			} catch (e) {
+				log('Polling error:', e);
+			}
+
+			if (attempts >= maxAttempts) {
+				clearInterval(interval);
+				showManualCheckWarning();
+			}
+		}, 3000); // Check every 3 seconds
+	}
+
+	function showSuccessScreen() {
+		// We close any open toasts
+		toast = false;
+		// Trigger the dedicated full-screen success component
+		showSuccessOverlay = true;
+	}
+
+	function showManualCheckWarning() {
+		toastParams = {
+			toastType: 'warning',
+			toastMsg: 'Payment taking longer to verify. Please check your dashboard in a few minutes.',
+			close
+		};
+		toast = true;
+	}
 	// ****************************************************************************************************************
 	// offers
 	// ****************************************************************************************************************
@@ -193,11 +317,11 @@
 	const oldValues = plans.base_plans.wholesale;
 	const oldOwnerValue = plans.base_plans.owner.yearly_base_price;
 	async function validateOffer() {
-		console.log(`Validating promo code: ${offerCode}`);
+		log(`Validating promo code: ${offerCode}`);
 		try {
 			plans = await subscriptionsApi.validate(businessId, offerCode);
 			offerValidated = true;
-			console.log(`promo code: ${offerCode} validated`);
+			log(`promo code: ${offerCode} validated`);
 		} catch (err: any) {
 			toastParams = {
 				toastType: 'error',
@@ -205,7 +329,7 @@
 				close
 			};
 			toast = true;
-			console.log('err in validateOffer, of plans, err:', err);
+			log('err in validateOffer, of plans, err:', err);
 		}
 	}
 	async function removeOffer() {
@@ -214,6 +338,11 @@
 		offerCode = '';
 	}
 </script>
+
+<svelte:head>
+	<title>Ledgerit Plans</title>
+	<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</svelte:head>
 
 <div class="min-h-screen bg-background pb-24 text-text-primary transition-colors duration-300">
 	<div class="mx-auto max-w-6xl px-4 py-12 md:px-8">
@@ -486,28 +615,6 @@
 						</li>
 					</ul>
 
-					<!-- {#if plans.is_trial_available} -->
-					<!-- 	<div -->
-					<!-- 		class="mb-4 flex flex-col gap-3 rounded-xl border border-success/20 bg-success/10 p-3" -->
-					<!-- 	> -->
-					<!-- 		<div class="flex items-center gap-2"> -->
-					<!-- 			<span class="text-lg">⏳</span> -->
-					<!-- 			<p class="text-xs font-medium text-success"> -->
-					<!-- 				<strong>Limited Offer:</strong> You get the first 3 months entirely for free. -->
-					<!-- 			</p> -->
-					<!-- 		</div> -->
-					<!---->
-					<!-- 		<div class="flex items-center justify-between border-t border-success/20 pt-2"> -->
-					<!-- 			<span class="text-[10px] font-bold text-success/80 uppercase">Trial available</span> -->
-					<!-- 			<button -->
-					<!-- 				onclick={() => handleSelectPlan('trial')} -->
-					<!-- 				class="rounded-lg bg-success px-3 py-1.5 text-[11px] font-bold text-background shadow-sm transition-all hover:bg-success/90 active:scale-95" -->
-					<!-- 			> -->
-					<!-- 				Activate Trial -->
-					<!-- 			</button> -->
-					<!-- 		</div> -->
-					<!-- 	</div> -->
-					<!-- {/if} -->
 					<button
 						onclick={() => handleSelectPlan('owner')}
 						class="mt-auto w-full rounded-xl bg-surface-high py-3 font-semibold text-text-primary transition-all hover:bg-surface-variant"
@@ -618,6 +725,7 @@
 		{/if}
 	</div>
 </div>
+
 {#if toast}
 	<Toast
 		toastType={toastParams.toastType}
@@ -626,4 +734,8 @@
 		onConfirm={toastParams.onConfirm}
 		confirmText={toastParams.confirmText}
 	/>
+{/if}
+
+{#if showSuccessOverlay}
+	<PaymentSuccess onContinue={redirect} />
 {/if}
