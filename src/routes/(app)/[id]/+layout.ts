@@ -1,3 +1,6 @@
+/**
+ * return a particual business id
+ * */
 import businessApi from "$lib/api/businessApi";
 import { businessStore } from "$lib/stores/store.svelte";
 import { error, redirect } from "@sveltejs/kit";

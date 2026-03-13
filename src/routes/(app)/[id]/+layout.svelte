@@ -1,4 +1,7 @@
 <script lang="ts">
+	/**
+	 * business nav bar
+	 */
 	import { page } from '$app/state';
 	import { ui, businessStore, auth } from '$lib/stores/store.svelte';
 	import { LayoutDashboard, History, CheckSquare, Settings, ChevronLeft } from 'lucide-svelte';
@@ -18,10 +21,10 @@
 	};
 
 	const navItems = [
-		{ name: 'Transactions', path: 'transactions/', icon: History },
+		{ name: 'Transactions', path: 'transactions', icon: History },
 		{ name: 'Dashboard', path: '', icon: LayoutDashboard }, // Base business page
-		{ name: 'Approvals', path: 'approvals/', icon: CheckSquare },
-		{ name: 'Settings', path: 'settings/', icon: Settings }
+		{ name: 'Approvals', path: 'approvals', icon: CheckSquare },
+		{ name: 'Settings', path: 'settings', icon: Settings }
 	];
 
 	const getInitials = (name: string) => {

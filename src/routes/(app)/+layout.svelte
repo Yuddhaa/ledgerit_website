@@ -1,4 +1,7 @@
 <script lang="ts">
+	/**
+	 * contains profile settings pop up
+	 */
 	import { PUBLIC_APP_VERSION } from '$env/static/public';
 	import { User, Moon, Sun, LogOut, Info, X, ChevronRight } from 'lucide-svelte';
 	import { fade, slide, scale } from 'svelte/transition';

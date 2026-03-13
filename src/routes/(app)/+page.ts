@@ -1,3 +1,6 @@
+/**
+ * to get all business a user is member of
+ */
 import businessApi from "$lib/api/businessApi";
 import { businessStore } from "$lib/stores/store.svelte";
 import type { PageLoad } from "./$types";

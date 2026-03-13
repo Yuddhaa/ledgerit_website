@@ -1,4 +1,7 @@
 <script lang="ts">
+	/**
+	 * this page is for 'my business' home page
+	 */
 	import { Plus, ChevronRight, UserPlus, ShieldCheck, User, Search, X } from 'lucide-svelte';
 	import Fuse from 'fuse.js';
 	import { slide } from 'svelte/transition';

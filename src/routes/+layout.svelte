@@ -1,4 +1,7 @@
 <script lang="ts">
+	/**
+	 * this page just to apply theme
+	 */
 	import { onMount } from 'svelte';
 	import './layout.css';
 	import { ui } from '$lib/stores/store.svelte';

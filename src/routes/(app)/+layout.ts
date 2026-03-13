@@ -1,3 +1,9 @@
+/**
+ * if logged in
+     * to get the user details
+ * if not
+     * to redirect to login
+ */
 import cookies from "$lib/utils/cookies";
 import { redirect } from "@sveltejs/kit";
 import api from "$lib/api/api";
