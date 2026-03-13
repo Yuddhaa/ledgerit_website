@@ -24,7 +24,7 @@ export interface business {
     current_balance: number,
 }
 
-export type subscriptions_status = 'inactive' | 'pending' | 'trialing' | 'trialing_pending' | 'active' | 'past_due' | 'paused' | 'canceled' | 'expired' | 'authenticated';
+export type subscriptions_status = 'inactive' | 'pending' | 'trialing' | 'trialing_pending' | 'active' | 'past_due' | 'paused' | 'canceled' | 'expired' | 'authenticated' | 'trial_ended';
 
 export interface plans {
     current_plan: currentPlans | null,
@@ -64,3 +64,26 @@ export interface error {
     message: string
 }
 
+export interface Transaction {
+    id: string
+    business_id: string
+    user_id: string
+    amount: number
+    direction: "in" | "out"
+    category_id: string | null
+    category_name: string | null
+    party_id: string
+    party_name: string
+    mode: "online" | "cash" | "cheque"
+    receipt_no: string
+    description: string
+    created_at: string
+    updated_at: string
+    user_name: string
+}
+
+export interface tranStats {
+    cash_in: number,
+    cash_out: number,
+    net_balance: number,
+}

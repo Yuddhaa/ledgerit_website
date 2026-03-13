@@ -2,8 +2,7 @@
 	import { Plus, ChevronRight, UserPlus, ShieldCheck, User, Search, X } from 'lucide-svelte';
 	import Fuse from 'fuse.js';
 	import { slide } from 'svelte/transition';
-	import { ui, auth } from '$lib/stores/store.svelte';
-	let { data } = $props();
+	import { ui, auth, businessStore } from '$lib/stores/store.svelte';
 
 	// Search State
 	let searchQuery = $state('');
@@ -12,7 +11,7 @@
 		keys: ['name'],
 		threshold: 0.3
 	};
-	const fuse = $derived(new Fuse(data.business, options));
+	const fuse = $derived(new Fuse(businessStore?.business, options));
 
 	// This is where you will plug in your Fuse.js logic
 	// For now, it defaults to all businesses
@@ -21,7 +20,7 @@
 			? (() => {
 					return fuse.search(searchQuery).map((result) => result.item);
 				})()
-			: data.business
+			: businessStore.business
 	);
 
 	const formatCurrency = (amount: number) => {
@@ -119,7 +118,7 @@
 			{@const status = getStatusConfig(b.subscriptions_status)}
 
 			<a
-				href={`/${b.id}`}
+				href={`/${b.id}/transactions`}
 				class="flex flex-col overflow-hidden rounded-3xl border border-outline-variant shadow-sm transition-all active:scale-[0.98]"
 				transition:slide
 			>

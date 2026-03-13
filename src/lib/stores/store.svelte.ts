@@ -7,8 +7,9 @@ class authState {
 
 export const auth = new authState()
 
-export const businessStore = $state<{ selected: business | null }>({
-    selected: null
+export const businessStore = $state<{ selected: business | null; business: business[] }>({
+    business: [],
+    selected: null,
 })
 
 export const ui = $state({

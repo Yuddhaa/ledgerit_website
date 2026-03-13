@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import businessApi from '$lib/api/businessApi';
 	import Toast from '$lib/components/Toast.svelte';
+	import { businessStore } from '$lib/stores/store.svelte';
 
 	let loading: boolean = $state(false);
 	let created: boolean = $state(false);
@@ -56,6 +57,7 @@
 		text="New Business '{name}' Added"
 		close={async () => {
 			created = false;
+			businessStore.business = [];
 			await goto('/');
 		}}
 	/>
