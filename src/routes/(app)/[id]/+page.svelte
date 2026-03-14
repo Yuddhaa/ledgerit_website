@@ -1,1 +1,283 @@
-<h1>dashboard</h1>
+<script lang="ts">
+	import {
+		Users,
+		UserPlus,
+		ShieldCheck,
+		UserCircle,
+		Search,
+		Edit,
+		X,
+		Crown,
+		CreditCard,
+		ChevronRight,
+		Trash2
+	} from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
+	import { businessStore, auth, memberStore } from '$lib/stores/store.svelte';
+	import { log } from '$lib/utils/helpers';
+	import Fuse from 'fuse.js';
+
+	let { data } = $props();
+
+	const business = $derived(businessStore.selected);
+	const status = $derived(business?.subscriptions_status);
+
+	// Parse Plan ID: "yearly-wholesale-2" -> { period: "yearly", type: "wholesale", limit: 5 }
+	const planInfo = $derived.by(() => {
+		if (!business?.current_plan_id) return { period: 'trial', type: 'trial', limit: 3 };
+		const parts = business.current_plan_id.split('-');
+		const baseLimit = parts[1] === 'solo' ? 1 : parts[1] === 'owner' ? 1000 : 3;
+		const addons = parseInt(parts[2] || '0');
+		return {
+			period: parts[0],
+			type: parts[1],
+			limit: baseLimit + addons
+		};
+	});
+
+	// Find my role silently using a derived state
+	const myRole = $derived(
+		memberStore.members.find((m) => m.email === auth.user?.email)?.role || 'employee'
+	);
+
+	const formatCurrency = (amount: number) => {
+		return new Intl.NumberFormat('en-IN', {
+			style: 'currency',
+			currency: 'INR',
+			maximumFractionDigits: 0
+		}).format(amount);
+	};
+
+	async function updateMemberRole(memberId: string, newRole: string) {
+		log(`Updating ${memberId} to ${newRole}`);
+	}
+
+	async function removeMember(memberId: string) {
+		log(`Removing member ${memberId}`);
+	}
+
+	// --- Search Logic ---
+	let searchQuery = $state('');
+
+	const fuse = $derived(
+		new Fuse(memberStore.members, {
+			keys: ['name', 'email'],
+			threshold: 0.3
+		})
+	);
+
+	// This is what the {#each} loop should use
+	const filteredMembers = $derived.by(() => {
+		if (!searchQuery) return memberStore.members;
+		return fuse.search(searchQuery).map((result) => result.item);
+	});
+</script>
+
+<div class="min-h-screen bg-background p-4 pb-24 md:p-8">
+	{#if business}
+		<section
+			class="mb-8 overflow-hidden rounded-4xl border border-outline-variant bg-surface shadow-sm"
+		>
+			<div class="bg-primary-container p-6">
+				<div class="flex items-start justify-between">
+					<div class="space-y-1">
+						<p class="text-[10px] font-bold tracking-widest text-primary uppercase">
+							Business Profile
+						</p>
+
+						<div class="flex items-center gap-2">
+							<h1 class="text-3xl font-black text-text-primary">{business.name}</h1>
+							<button
+								onclick={() => log('Edit Business Name clicked')}
+								class="group flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary/40 transition-all hover:bg-primary/10 hover:text-primary active:scale-90"
+								aria-label="Edit Business Name"
+							>
+								<Edit size={18} class="transition-transform group-hover:rotate-12" />
+							</button>
+						</div>
+						<div class="flex flex-wrap items-center gap-2 pt-2">
+							<span
+								class="rounded-lg bg-primary px-2 py-1 text-[10px] font-black text-background uppercase"
+							>
+								{planInfo.type}
+							</span>
+							<span
+								class="rounded-lg bg-background/50 px-2 py-1 text-[10px] font-bold text-text-secondary uppercase"
+							>
+								{planInfo.period}
+							</span>
+							<span
+								class="ml-2 text-[10px] font-bold tracking-widest text-text-secondary uppercase"
+							>
+								Status: <span class={status === 'active' ? 'text-success' : 'text-error'}
+									>{status}</span
+								>
+							</span>
+						</div>
+					</div>
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-2xl bg-background/40 text-primary shadow-inner"
+					>
+						<Crown size={32} />
+					</div>
+				</div>
+			</div>
+
+			{#if planInfo.type !== 'owner'}
+				<div class="flex items-center justify-between border-t border-outline-variant p-4 px-6">
+					<div class="flex items-center gap-4 text-text-secondary">
+						<div class="flex items-center gap-1.5">
+							<Users size={14} />
+							<span class="text-[10px] font-bold uppercase">
+								{memberStore.members.length} / {planInfo.limit} Members
+							</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<CreditCard size={14} />
+							<span class="text-[10px] font-bold uppercase">
+								Ends: {new Date(business.subscription_end_period).toLocaleDateString('en-IN')}
+							</span>
+						</div>
+					</div>
+					<a
+						href={`/${business.id}/plans`}
+						class="rounded-xl bg-surface-high p-2 text-primary transition-colors hover:bg-primary/10"
+					>
+						<ChevronRight size={20} />
+					</a>
+				</div>
+			{/if}
+		</section>
+	{/if}
+
+	<div class="mb-6 space-y-4 px-2">
+		<div class="flex items-center justify-between">
+			<div>
+				<h2 class="text-2xl font-black text-text-primary">Team Members</h2>
+				<p class="text-[10px] font-bold tracking-widest text-text-secondary uppercase">
+					Manage access & roles
+				</p>
+			</div>
+			<button
+				class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-lg shadow-primary/20 transition-transform active:scale-90"
+			>
+				<UserPlus size={24} />
+			</button>
+		</div>
+
+		<div class="group relative">
+			<div
+				class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-text-secondary transition-colors group-focus-within:text-primary"
+			>
+				<Search size={18} />
+			</div>
+			<input
+				type="text"
+				bind:value={searchQuery}
+				placeholder="Search name or email..."
+				class="w-full rounded-2xl border border-outline-variant bg-surface py-4 pr-12 pl-12 text-sm font-bold text-text-primary shadow-sm transition-all outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+			/>
+			{#if searchQuery}
+				<button
+					onclick={() => (searchQuery = '')}
+					class="absolute inset-y-0 right-4 flex items-center text-text-secondary hover:text-error"
+				>
+					<X size={18} />
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	{#await data.membersPromise}
+		<div class="flex justify-center py-20 opacity-40">
+			<div
+				class="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"
+			></div>
+		</div>
+	{:then res}
+		<div class="space-y-4">
+			{#each filteredMembers as member (member.id)}
+				{@const isMe = member.email === auth.user?.email}
+
+				<div
+					transition:fade
+					class="group relative rounded-[28px] border border-outline-variant bg-surface p-5 transition-all active:bg-surface-high"
+				>
+					<div class="flex items-start justify-between">
+						<div class="flex gap-4">
+							<div
+								class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-surface-high font-black text-primary uppercase shadow-sm"
+							>
+								{member.name[0]}
+							</div>
+
+							<div class="space-y-1">
+								<h3 class="leading-tight font-black text-text-primary">
+									{member.name}
+									{isMe ? '(You)' : ''}
+								</h3>
+								<div
+									class="flex items-center gap-2 text-[9px] font-bold tracking-wider text-text-secondary uppercase"
+								>
+									{#if member.role === 'creator'}
+										<Crown size={10} class="text-primary" />
+									{:else if member.role === 'admin'}
+										<ShieldCheck size={10} class="text-success" />
+									{:else}
+										<UserCircle size={10} />
+									{/if}
+									<span>{member.role}</span>
+								</div>
+								<p class="text-[10px] text-text-secondary/60">{member.email}</p>
+							</div>
+						</div>
+
+						<div class="text-right">
+							<p class="text-lg font-black text-text-primary">
+								{formatCurrency(member.current_balance)}
+							</p>
+							<p class="text-[10px] font-bold text-text-secondary uppercase opacity-50">Balance</p>
+						</div>
+					</div>
+
+					{#if !isMe && (myRole === 'creator' || (myRole === 'admin' && member.role === 'employee'))}
+						<div
+							class="mt-5 flex items-center justify-end gap-2 border-t border-outline-variant/30 pt-4"
+						>
+							{#if myRole === 'creator'}
+								<button
+									onclick={() =>
+										updateMemberRole(member.id, member.role === 'admin' ? 'employee' : 'admin')}
+									class="rounded-xl bg-surface-high px-4 py-2 text-[10px] font-black text-text-primary transition-colors hover:bg-primary/10 hover:text-primary"
+								>
+									{member.role === 'admin' ? 'Demote to Employee' : 'Promote to Admin'}
+								</button>
+							{/if}
+
+							{#if myRole === 'admin' && member.role === 'employee'}
+								<button
+									onclick={() => updateMemberRole(member.id, 'admin')}
+									class="rounded-xl bg-surface-high px-4 py-2 text-[10px] font-black text-success hover:bg-success/10"
+								>
+									Promote to Admin
+								</button>
+							{/if}
+
+							<button
+								onclick={() => removeMember(member.id)}
+								class="flex h-10 w-10 items-center justify-center text-error/30 transition-colors hover:text-error"
+							>
+								<Trash2 size={18} />
+							</button>
+						</div>
+					{/if}
+				</div>
+			{:else}
+				<div class="py-20 text-center opacity-40">
+					<Users size={48} class="mx-auto mb-4" />
+					<p class="font-bold uppercase tracking-widest text-xs">No members found</p>
+				</div>
+			{/each}
+		</div>
+	{/await}
+</div>

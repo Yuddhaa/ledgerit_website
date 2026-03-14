@@ -2,6 +2,7 @@ import partiesApi from "$lib/api/partiesApi";
 import transactionsApi from "$lib/api/transactionsApi";
 import { transactionStore } from "$lib/stores/store.svelte";
 import { log } from "$lib/utils/helpers";
+import type { transaction, tranStats } from "$lib/utils/types";
 import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params, parent, fetch }) => {
@@ -12,7 +13,10 @@ export const load: PageLoad = async ({ params, parent, fetch }) => {
     const hasCache = transactionStore.businessId === businessId &&
         transactionStore.transactions.transactions.length > 0;
 
-    let transactionsPromise;
+    let transactionsPromise: Promise<{
+        stats: tranStats;
+        transactions: transaction[];
+    }>;
 
     if (hasCache) {
         // Return cached data as a resolved promise
@@ -38,7 +42,6 @@ export const load: PageLoad = async ({ params, parent, fetch }) => {
     }
 
     return {
-        businessId,
         transactionsPromise
     };
 };

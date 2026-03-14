@@ -1,5 +1,5 @@
 import { log } from "$lib/utils/helpers"
-import type { business, party, transaction, tranStats, user } from "$lib/utils/types"
+import type { business, party, role, transaction, tranStats, user } from "$lib/utils/types"
 
 class authState {
     user = $state<user | null>(null)
@@ -8,9 +8,20 @@ class authState {
 
 export const auth = new authState()
 
-export const businessStore = $state<{ selected: business | null; business: business[] }>({
+export const businessStore = $state<{
+    selected: business | null;
+    business: business[];
+}>({
     business: [],
     selected: null,
+})
+
+export const memberStore = $state<{
+    businessId: string | null;
+    members: member[]
+}>({
+    businessId: null,
+    members: [],
 })
 
 export const ui = $state({
@@ -57,16 +68,6 @@ export function isApplyFilterActive(filter: tranFilter): boolean {
     log(`transactionStore.filter:${JSON.stringify(transactionStore.filter)}`)
     log(`filter:${JSON.stringify(filter)}`)
     return JSON.stringify(transactionStore.filter) !== JSON.stringify(filter);
-    // if (transactionStore.filter.user_id == filter.user_id) return false
-    // if (transactionStore.filter.category_id == filter.category_id) return false
-    // if (transactionStore.filter.party_id == filter.party_id) return false
-    // if (transactionStore.filter.mode == filter.mode) return false
-    // if (transactionStore.filter.direction == filter.direction) return false
-    // if (transactionStore.filter.sortBy == filter.sortBy) return false
-    // if (transactionStore.filter.order == filter.order) return false
-    // if (transactionStore.filter.from == filter.from) return false
-    // if (transactionStore.filter.to == filter.to) return false
-    // return true
 }
 
 /**
@@ -108,4 +109,13 @@ export function clearStore() {
         stats: { cash_in: 0, cash_out: 0, net_balance: 0 },
         transactions: []
     };
+}
+
+export interface member {
+    id: string,
+    name: string,
+    email: string,
+    phone_number: string,
+    role: role,
+    current_balance: number,
 }
