@@ -1,5 +1,5 @@
 import api from "$lib/api/api";
-import type { Transaction, tranStats } from "$lib/utils/types";
+import type { transaction, tranStats } from "$lib/utils/types";
 
 export default {
     /**
@@ -33,6 +33,6 @@ export default {
         const queryString = query.toString();
         const url = `/business/${businessId}/transactions${queryString ? `?${queryString}` : ''}`;
 
-        return api.Get<{ stats: tranStats, transactions: Transaction[] }>(url, customFetch);
+        return api.Get<{ stats: tranStats, transactions: transaction[] }>(url, customFetch);
     }
 }

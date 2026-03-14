@@ -47,7 +47,7 @@
 		<div class="flex items-center gap-3">
 			<a
 				href="/"
-				class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-high text-text-secondary md:hidden"
+				class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-high text-text-secondary"
 			>
 				<ChevronLeft size={20} />
 			</a>

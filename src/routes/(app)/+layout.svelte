@@ -5,7 +5,7 @@
 	import { PUBLIC_APP_VERSION } from '$env/static/public';
 	import { User, Moon, Sun, LogOut, Info, X, ChevronRight } from 'lucide-svelte';
 	import { fade, slide, scale } from 'svelte/transition';
-	import { ui, auth } from '$lib/stores/store.svelte';
+	import { ui, auth, clearStore } from '$lib/stores/store.svelte';
 	import { logout } from '$lib/api/auth/auth';
 	import { goto } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
@@ -139,6 +139,7 @@
 						class="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-error/20 bg-error/10 p-4 font-black text-error transition-colors hover:bg-error/20"
 						onclick={async () => {
 							isLoggingOut = true;
+							clearStore();
 							await logout();
 							ui.showUniversalSettings = false;
 							await goto('/login');

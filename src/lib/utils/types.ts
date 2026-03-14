@@ -64,7 +64,7 @@ export interface error {
     message: string
 }
 
-export interface Transaction {
+export interface transaction {
     id: string
     business_id: string
     user_id: string
@@ -86,4 +86,14 @@ export interface tranStats {
     cash_in: number,
     cash_out: number,
     net_balance: number,
+}
+
+export interface party {
+    id: string,
+    name: string,
+    place: string,
+    phone_number: string,
+    business_id: string,
+    created_at: string,
+    updated_at: string,
 }
