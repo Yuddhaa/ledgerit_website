@@ -1,4 +1,3 @@
-import { log } from "$lib/utils/helpers"
 import type { business, party, role, transaction, tranStats, user } from "$lib/utils/types"
 
 class authState {
@@ -65,8 +64,6 @@ export interface tranFilter {
  * retuns true if Apply button should be active
  */
 export function isApplyFilterActive(filter: tranFilter): boolean {
-    log(`transactionStore.filter:${JSON.stringify(transactionStore.filter)}`)
-    log(`filter:${JSON.stringify(filter)}`)
     return JSON.stringify(transactionStore.filter) !== JSON.stringify(filter);
 }
 

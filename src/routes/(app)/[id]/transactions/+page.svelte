@@ -74,7 +74,6 @@
 
 	function groupTransactions(transactions: transaction[]) {
 		if (!transactions) return [];
-		log(transactions);
 		const groups: Record<string, transaction[]> = {};
 		transactions.forEach((tx) => {
 			const date = tx.created_at.split('T')[0];

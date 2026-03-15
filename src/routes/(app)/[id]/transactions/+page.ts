@@ -1,7 +1,6 @@
 import partiesApi from "$lib/api/partiesApi";
 import transactionsApi from "$lib/api/transactionsApi";
 import { transactionStore } from "$lib/stores/store.svelte";
-import { log } from "$lib/utils/helpers";
 import type { transaction, tranStats } from "$lib/utils/types";
 import type { PageLoad } from "./$types";
 
