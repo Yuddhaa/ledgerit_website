@@ -6,7 +6,8 @@
 		transactionStore,
 		isClrearFilterActive,
 		isApplyFilterActive,
-		businessStore
+		businessStore,
+		partiesStore
 	} from '$lib/stores/store.svelte.js';
 	import { log } from '$lib/utils/helpers';
 	import type { transaction } from '$lib/utils/types.js';
@@ -96,7 +97,7 @@
 			<button
 				onclick={() => (showFilters = !showFilters)}
 				class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all hover:cursor-pointer active:scale-90
-	{isClrearFilterActive(transactionStore.filter)
+	{isClrearFilterActive('tran')
 					? 'bg-primary text-background shadow-lg shadow-primary/20'
 					: 'bg-surface-high text-text-primary'}"
 			>
@@ -106,7 +107,7 @@
 					<Filter size={20} />
 				{/if}
 
-				{#if isClrearFilterActive(transactionStore.filter) && !showFilters}
+				{#if isClrearFilterActive('tran') && !showFilters}
 					<span class="absolute -top-1 -right-1 flex h-3 w-3">
 						<span
 							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"
@@ -177,7 +178,7 @@
 						>
 							<option value="">All Parties</option>
 
-							{#each transactionStore.parties as party}
+							{#each partiesStore.parties as party}
 								<option value={party.id}>{party.name}</option>
 							{/each}
 						</select>
@@ -277,7 +278,7 @@
 			<div class="flex items-center justify-between">
 				<div class="space-y-1">
 					<p class="text-[10px] font-bold tracking-widest text-text-secondary uppercase">
-						Net Balance
+						{isClrearFilterActive('tran') ? 'Filterd' : 'Business'} Net Balance
 					</p>
 					<h2 class="text-3xl font-black text-text-primary">
 						{formatCurrency(res.stats.net_balance)}
@@ -286,10 +287,14 @@
 				<div class="h-12 w-px bg-outline-variant"></div>
 				<div class="space-y-2 text-right">
 					<p class="text-[10px] font-bold text-success uppercase">
-						Total in: {formatCurrency(res.stats.cash_in)}
+						{isClrearFilterActive('tran') ? '[Filterd]' : '[Total]'} in: {formatCurrency(
+							res.stats.cash_in
+						)}
 					</p>
 					<p class="text-[10px] font-bold text-error uppercase">
-						Total out: {formatCurrency(res.stats.cash_out)}
+						{isClrearFilterActive('tran') ? '[Filterd]' : '[Total]'} out: {formatCurrency(
+							res.stats.cash_out
+						)}
 					</p>
 				</div>
 			</div>

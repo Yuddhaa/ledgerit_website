@@ -13,19 +13,24 @@
 	import { goto } from '$app/navigation';
 	import { businessStore } from '$lib/stores/store.svelte';
 	import { log } from '$lib/utils/helpers';
+	import Toast from '$lib/components/Toast.svelte';
 
 	const business = $derived(businessStore.selected);
 
 	// Navigation Handlers
-	const navigate = (path: string) => {
+	const navigate = async (path: string) => {
+		isLoading = true;
 		if (!business?.id) return;
-		goto(`/${business.id}/${path}`);
+		await goto(`/${business.id}/${path}`);
+		isLoading = false;
 	};
 
 	const handleDeleteBusiness = () => {
 		log('Delete business initiated for:', business?.id);
 		// Later: add a "Type business name to confirm" modal
 	};
+
+	let isLoading = $state(false);
 
 	const version = '1.0.4-stable';
 </script>
@@ -118,7 +123,7 @@
 				<div class="mx-5 h-px bg-outline-variant"></div>
 
 				<button
-					onclick={() => goto(`/${business?.id}`)}
+					onclick={async () => await goto(`/${business?.id}`)}
 					class="flex w-full items-center justify-between p-5 transition-colors hover:cursor-pointer active:bg-surface-high"
 				>
 					<div class="flex items-center gap-4">
@@ -173,3 +178,7 @@
 		</footer>
 	</div>
 </div>
+
+{#if isLoading}
+	<Toast toastType="loading" text="loading" />
+{/if}

@@ -154,8 +154,8 @@
 				</div>
 
 				<div class="bg-surface-high p-5 pt-4">
-					<p class="text-[10px] font-bold tracking-widest text-text-secondary/60 uppercase">
-						Current Balance
+					<p class="text-[10px] font-bold tracking-widest text-text-secondary/100 uppercase">
+						My Balance
 					</p>
 					<div class="mt-1 flex items-center justify-between">
 						<p class="text-2xl font-black text-text-primary">

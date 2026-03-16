@@ -2,7 +2,8 @@ import businessApi from "$lib/api/businessApi";
 import { memberStore, type member } from "$lib/stores/store.svelte";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ params, parent, fetch }) => {
+export const load: PageLoad = async ({ depends, params, parent, fetch }) => {
+    depends('data:members')
     await parent();
     const businessId = params.id;
 

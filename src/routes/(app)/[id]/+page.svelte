@@ -61,7 +61,7 @@
 
 	const fuse = $derived(
 		new Fuse(memberStore.members, {
-			keys: ['name', 'email'],
+			keys: ['name', 'email', 'phone_number'],
 			threshold: 0.3
 		})
 	);
@@ -174,7 +174,7 @@
 			<input
 				type="text"
 				bind:value={searchQuery}
-				placeholder="Search name or email..."
+				placeholder="Search by name / email / phone number"
 				class="w-full rounded-2xl border border-outline-variant bg-surface py-4 pr-12 pl-12 text-sm font-bold text-text-primary shadow-sm transition-all outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
 			/>
 			{#if searchQuery}
@@ -194,7 +194,7 @@
 				class="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"
 			></div>
 		</div>
-	{:then res}
+	{:then}
 		<div class="space-y-4">
 			{#each filteredMembers as member (member.id)}
 				{@const isMe = member.email === auth.user?.email}
@@ -229,6 +229,7 @@
 									<span>{member.role}</span>
 								</div>
 								<p class="text-[10px] text-text-secondary/60">{member.email}</p>
+								<p class="text-[10px] text-text-secondary/60">{member.phone_number}</p>
 							</div>
 						</div>
 

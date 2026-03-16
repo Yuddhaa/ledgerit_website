@@ -5,9 +5,9 @@
 	import { PUBLIC_APP_VERSION } from '$env/static/public';
 	import { User, Moon, Sun, LogOut, Info, X, ChevronRight } from 'lucide-svelte';
 	import { fade, slide, scale } from 'svelte/transition';
-	import { ui, auth, clearStore } from '$lib/stores/store.svelte';
+	import { ui, auth, clearStore, memberStore } from '$lib/stores/store.svelte';
 	import { logout } from '$lib/api/auth/auth';
-	import { goto } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
 	import usersApi from '$lib/api/usersApi';
 
@@ -40,6 +40,12 @@
 		}
 		isUpdatingUser = true;
 		const user = await usersApi.update(editName, editPhone);
+		memberStore.members.map((member) => {
+			if (member.id === user.user.id) {
+				member.name = user.user.name;
+				member.phone_number = user.user.phone_number;
+			}
+		});
 		auth.user = user.user;
 		isUpdatingUser = false;
 		showEditModal = false;
