@@ -82,6 +82,39 @@ export interface transaction {
     user_name: string
 }
 
+export type approvalType = "edit" | "delete"
+export type approvalStatus = "pending" | "approved" | "rejected"
+export interface transactionChange {
+    amount: string
+    direction: "in" | "out"
+    category_id: string
+    party_id: string
+    mode: string
+    receipt_no: string
+    description: string
+    category_name: string
+    party_name: string
+}
+export interface approval {
+    id: string
+    transaction_id: string
+    type: approvalType
+    status: approvalStatus
+    reason: string
+    created_at: string
+    updated_at: string
+
+    requested_by_id: string
+    requested_by_name: string
+
+    reviewed_by_id: string | null
+    reviewed_by_name: string | null
+
+    requested_changes: transactionChange
+    original: transactionChange
+}
+
+
 export interface tranStats {
     cash_in: number,
     cash_out: number,
@@ -95,5 +128,13 @@ export interface party {
     phone_number: string,
     business_id: string,
     created_at: string,
+    updated_at: string,
+}
+
+export interface category {
+    id: string
+    business_id: string
+    name: string
+    created_at: string
     updated_at: string,
 }

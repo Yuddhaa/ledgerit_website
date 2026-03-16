@@ -1,5 +1,6 @@
 import api from "$lib/api/api";
-import type { transaction, tranStats } from "$lib/utils/types";
+import { log } from "$lib/utils/helpers";
+import type { approval, approvalStatus, approvalType, transaction, tranStats } from "$lib/utils/types";
 
 export default {
     /**
@@ -34,5 +35,56 @@ export default {
         const url = `/business/${businessId}/transactions${queryString ? `?${queryString}` : ''}`;
 
         return api.Get<{ stats: tranStats, transactions: transaction[] }>(url, customFetch);
-    }
+    },
+
+    listApprovals: (
+        businessId: string,
+        params: {
+            requested_by?: string[];
+            status?: approvalStatus;
+            type?: approvalType;
+            from?: string;
+            to?: string;
+        } = {},
+        customFetch?: typeof fetch
+    ) => {
+        // Create a search params object from the filters
+        const query = new URLSearchParams();
+
+        // Only append parameters that actually have a value
+        Object.entries(params).forEach(([key, value]) => {
+            if (value === undefined || value === "") return;
+
+            if (Array.isArray(value)) {
+                value.forEach(v => {
+                    if (v) query.append(key, v);
+                });
+            } else {
+                query.append(key, value);
+            }
+        });
+
+        const queryString = query.toString();
+        const url = `/business/${businessId}/transactions/approvals${queryString ? `?${queryString}` : ''}`;
+
+        log(`inside listApprovals:${url}`)
+
+        return api.Get<{ requests: approval[] }>(url, customFetch);
+    },
+
+    patchApproval: (businessId: string, approvalId: string, tran: approvalTran, customFetch?: typeof fetch) => api.Patch(`/business/${businessId}/transactions/approvals/${approvalId}`, tran, customFetch)
+}
+
+export interface approvalTran {
+    amount: number
+    direction: "in" | "out"
+    category_id: string | null
+    category_name: string | null
+    party_id: string
+    party_name: string
+    mode: "online" | "cash" | "cheque"
+    receipt_no: string
+    description: string
+    reason: string,
+    status: approvalStatus,
 }

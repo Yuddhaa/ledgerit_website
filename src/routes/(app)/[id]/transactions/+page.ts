@@ -1,6 +1,7 @@
 import partiesApi from "$lib/api/partiesApi";
 import transactionsApi from "$lib/api/transactionsApi";
-import { transactionStore } from "$lib/stores/store.svelte";
+import { partiesStore, transactionStore } from "$lib/stores/store.svelte";
+import { getCategoryPromise, getPartyPromise } from "$lib/utils/helpers";
 import type { transaction, tranStats } from "$lib/utils/types";
 import type { PageLoad } from "./$types";
 
@@ -33,14 +34,9 @@ export const load: PageLoad = async ({ params, parent, fetch }) => {
             });
     }
 
-    // Always refresh parties in background or check cache
-    if (transactionStore.parties.length === 0 || transactionStore.businessId !== businessId) {
-        partiesApi.listAll(businessId, {}, fetch).then((res) => {
-            transactionStore.parties = res.parties;
-        });
-    }
-
     return {
-        transactionsPromise
+        transactionsPromise,
+        partyPromise: getPartyPromise(businessId, fetch),
+        categoryPromise: getCategoryPromise(businessId, fetch),
     };
 };

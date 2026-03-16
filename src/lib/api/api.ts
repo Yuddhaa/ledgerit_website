@@ -20,13 +20,23 @@ export default {
             body: JSON.stringify(body),
         }, customFetch),
 
-    /** patch api */
+    /** put api */
     Put: <T>(
         path: string,
         body: unknown, customFetch?: typeof fetch
     ) =>
         api<T>(path, {
             method: "PUT",
+            body: JSON.stringify(body),
+        }, customFetch),
+
+    /** patch api */
+    Patch: <T>(
+        path: string,
+        body: unknown, customFetch?: typeof fetch
+    ) =>
+        api<T>(path, {
+            method: "PATCH",
             body: JSON.stringify(body),
         }, customFetch),
 
@@ -86,9 +96,22 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
     }
 
     if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: 'API Error' }));
-        log(JSON.stringify(error))
-        throw { status: res.status, message: error.error };
+        log("inside res!ok")
+        if (!res.ok) {
+            const errorBody = await res.json().catch(() => null);
+
+            const message =
+                errorBody?.message ||
+                errorBody?.error ||
+                (res.status === 500 ? "Internal API Error" : "Request failed");
+
+            log(JSON.stringify(errorBody));
+
+            throw { status: res.status, message };
+        }
+        // const error = await res.json().catch(() => { if (res.status === 500) return { message: "Inernal API Error" }; else { return { message: res.json() } } });
+        // log(JSON.stringify(error))
+        // throw { status: res.status, message: error.message };
     }
 
     log(`${options.method} ${path} is completed`)

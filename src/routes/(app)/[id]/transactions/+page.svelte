@@ -19,7 +19,7 @@
 	let activePromise = $derived(manualPromise || data.transactionsPromise);
 
 	let canClear = $derived(isClrearFilterActive());
-	let canApply = $derived(isApplyFilterActive(filters));
+	let canApply = $derived(isApplyFilterActive('tran', filters));
 
 	async function applyFilters() {
 		transactionStore.filter = { ...filters };
