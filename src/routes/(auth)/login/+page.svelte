@@ -40,7 +40,7 @@
 		} catch (err: any) {
 			// API helper throws an object with a message, so we catch it here
 			errorMessage = err.message || 'Login failed. Please try again.';
-			console.error('Login error:', err);
+			log('Login error:', err);
 		} finally {
 			isLoggingIn = false;
 		}
@@ -58,7 +58,7 @@
 		} catch (err: any) {
 			log('Sign-in error:', err);
 			// Check if user cancelled
-			if (err.message !== 'Sign in canceled') {
+			if (err.code !== 'SIGN_IN_CANCELED') {
 				errorMessage = 'Could not initialize Google Sign-In.' + JSON.stringify(err);
 			}
 		}
@@ -81,7 +81,7 @@
 				}
 			}
 		} catch (e: any) {
-			console.log('No pending redirect result found.');
+			log('No pending redirect result found.');
 		}
 	});
 </script>

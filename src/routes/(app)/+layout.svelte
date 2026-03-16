@@ -5,11 +5,13 @@
 	import { PUBLIC_APP_VERSION } from '$env/static/public';
 	import { User, Moon, Sun, LogOut, Info, X, ChevronRight } from 'lucide-svelte';
 	import { fade, slide, scale } from 'svelte/transition';
-	import { ui, auth, clearStore, memberStore } from '$lib/stores/store.svelte';
+	import { ui, auth, clearStore, memberStore, isStarting } from '$lib/stores/store.svelte';
 	import { logout } from '$lib/api/auth/auth';
 	import { goto, invalidate } from '$app/navigation';
 	import Toast from '$lib/components/Toast.svelte';
 	import usersApi from '$lib/api/usersApi';
+	import { log } from '$lib/utils/helpers';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
 	let isLoggingOut = $state(false);
@@ -50,7 +52,14 @@
 		isUpdatingUser = false;
 		showEditModal = false;
 	};
+	onMount(() => {
+		isStarting.starting = false;
+	});
 </script>
+
+{#if isStarting.starting}
+	<Toast toastType="loading" text="Starting Up" />
+{/if}
 
 {@render children()}
 

@@ -1,6 +1,7 @@
 import { log } from "$lib/utils/helpers"
 import type { approval, approvalStatus, approvalType, business, category, party, role, transaction, tranStats, user } from "$lib/utils/types"
 
+export const isStarting = $state<{ starting: boolean }>({ starting: true })
 // ************************************************************************************************
 class authState {
     user = $state<user | null>(null)

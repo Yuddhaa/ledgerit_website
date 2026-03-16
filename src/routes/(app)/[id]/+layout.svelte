@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	/**
 	 * business nav bar
 	 */
 	import { page } from '$app/state';
+	import Toast from '$lib/components/Toast.svelte';
 	import { ui, businessStore, auth } from '$lib/stores/store.svelte';
 	import { LayoutDashboard, History, CheckSquare, Settings, ChevronLeft } from 'lucide-svelte';
 
@@ -34,6 +36,8 @@
 			.join('')
 			.toUpperCase();
 	};
+
+	let isLoading = $state(false);
 </script>
 
 <svelte:head>
@@ -45,12 +49,16 @@
 		class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-outline-variant bg-background/80 px-4 backdrop-blur-md md:px-8"
 	>
 		<div class="flex items-center gap-3">
-			<a
-				href="/"
+			<button
+				onclick={async () => {
+					isLoading = true;
+					await goto('/');
+					isLoading = false;
+				}}
 				class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-high text-text-secondary"
 			>
 				<ChevronLeft size={20} />
-			</a>
+			</button>
 			<h2 class="text-lg font-black tracking-tight text-text-primary">
 				{businessStore.selected?.name || 'Loading...'}
 			</h2>
@@ -112,6 +120,10 @@
 		{/each}
 	</nav>
 </div>
+
+{#if isLoading}
+	<Toast toastType="loading" text="loading" />
+{/if}
 
 <style>
 	/* Ensures content doesn't get cut off by notched phones */
