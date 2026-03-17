@@ -11,6 +11,7 @@ import { auth } from "$lib/stores/store.svelte";
 import type { LayoutLoad } from "./$types";
 import type { user } from "$lib/utils/types";
 import { log } from "$lib/utils/helpers";
+import usersApi from "$lib/api/usersApi";
 
 export const ssr = false;
 
@@ -29,7 +30,7 @@ export const load: LayoutLoad = async ({ fetch }) => {
     try {
         let user: { user: user };
         if (!auth.user) {
-            user = await api.Get<{ user: user }>('/users/me', fetch)
+            user = await usersApi.listMe(fetch)
             auth.user = user.user
         } else {
             user = { user: auth.user }

@@ -96,7 +96,6 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
     }
 
     if (!res.ok) {
-        log("inside res!ok")
         if (!res.ok) {
             const errorBody = await res.json().catch(() => null);
 

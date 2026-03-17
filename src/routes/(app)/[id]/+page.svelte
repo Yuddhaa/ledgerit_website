@@ -10,17 +10,29 @@
 		Crown,
 		CreditCard,
 		ChevronRight,
-		Trash2
+		Trash2,
+		RefreshCw
 	} from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
 	import { businessStore, auth, memberStore } from '$lib/stores/store.svelte';
 	import { log } from '$lib/utils/helpers';
 	import Fuse from 'fuse.js';
+	import UpdateBusinessName from '$lib/components/UpdateBusinessName.svelte';
+	import AddMember from '$lib/components/AddMember.svelte';
+	import Toast from '$lib/components/Toast.svelte';
+	import businessApi from '$lib/api/businessApi.js';
+	import { invalidate } from '$app/navigation';
 
 	let { data } = $props();
 
 	const business = $derived(businessStore.selected);
 	const status = $derived(business?.subscriptions_status);
+
+	let loading = $state(false);
+	let errMsg = $state('');
+	let successMsg = $state('');
+	let warnMsg = $state('');
+	let warnOnConfirm: () => void | Promise<void> = $state(() => {});
 
 	// Parse Plan ID: "yearly-wholesale-2" -> { period: "yearly", type: "wholesale", limit: 5 }
 	const planInfo = $derived.by(() => {
@@ -48,15 +60,69 @@
 		}).format(amount);
 	};
 
-	async function updateMemberRole(memberId: string, newRole: string) {
-		log(`Updating ${memberId} to ${newRole}`);
+	async function updateMemberRole(memberId: string, newRole: 'admin' | 'employee') {
+		loading = true;
+		try {
+			if (!business) {
+				errMsg = 'Someting Went Wrong:no business object';
+				return;
+			}
+			await businessApi.updateRole(business.id, { user_id: memberId, role: newRole });
+			// update the store.
+			// while adding we do invalidate, cause the api's response is not compatible with members[]
+			// while updating, its easier to just update the array than invalidate
+			memberStore.members.map((member) => {
+				if (member.id == memberId) {
+					member.role = newRole;
+					return;
+				}
+			});
+			loading = false;
+			successMsg = 'Updated the user role to ' + newRole;
+		} catch (err: any) {
+			loading = false;
+			errMsg = err.message || 'Someting went wront while updating the role';
+		}
 	}
 
+	// *************************************************************************************8
+	// delete member logic
+	// *************************************************************************************8
 	async function removeMember(memberId: string) {
-		log(`Removing member ${memberId}`);
+		loading = true;
+		try {
+			if (!business) {
+				errMsg = 'Someting Went Wrong:no business object';
+				return;
+			}
+			await businessApi.delMember(business.id, memberId);
+			// remove from store.
+			// while adding we do invalidate, cause the api's response is not compatible with members[]
+			// while removing, its easier to just remove from the array than invalidate
+			memberStore.members = memberStore.members.filter((member) => {
+				if (member.id != memberId) return member;
+			});
+			loading = false;
+			successMsg = 'Removed The User From The Business';
+		} catch (err: any) {
+			loading = false;
+			errMsg = err.message || 'Someting went wront while removing the member';
+		}
 	}
 
+	// *************************************************************************************8
+	// add member logic
+	// *************************************************************************************8
+	let addingMember = $state(false);
+
+	// *************************************************************************************8
+	//update business name
+	// *************************************************************************************8
+	let updatingBusName = $state(false);
+
+	// *************************************************************************************8
 	// --- Search Logic ---
+	// *************************************************************************************8
 	let searchQuery = $state('');
 
 	const fuse = $derived(
@@ -80,43 +146,59 @@
 		>
 			<div class="bg-primary-container p-6">
 				<div class="flex items-start justify-between">
-					<div class="space-y-1">
-						<p class="text-[10px] font-bold tracking-widest text-primary uppercase">
-							Business Profile
-						</p>
+					<div class="w-full space-y-1">
+						<div class="flex items-center gap-2">
+							<p class="text-[10px] font-bold tracking-widest text-primary uppercase">
+								Business Profile
+							</p>
+						</div>
 
 						<div class="flex items-center gap-2">
 							<h1 class="text-3xl font-black text-text-primary">{business.name}</h1>
-							<button
-								onclick={() => log('Edit Business Name clicked')}
-								class="group flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary/40 transition-all hover:bg-primary/10 hover:text-primary active:scale-90"
-								aria-label="Edit Business Name"
-							>
-								<Edit size={18} class="transition-transform group-hover:rotate-12" />
-							</button>
-						</div>
-						<div class="flex flex-wrap items-center gap-2 pt-2">
-							<span
-								class="rounded-lg bg-primary px-2 py-1 text-[10px] font-black text-background uppercase"
-							>
-								{planInfo.type}
-							</span>
-							<span
-								class="rounded-lg bg-background/50 px-2 py-1 text-[10px] font-bold text-text-secondary uppercase"
-							>
-								{planInfo.period}
-							</span>
-							<span
-								class="ml-2 text-[10px] font-bold tracking-widest text-text-secondary uppercase"
-							>
-								Status: <span class={status === 'active' ? 'text-success' : 'text-error'}
-									>{status}</span
+							{#if myRole !== 'employee'}
+								<button
+									onclick={() => {
+										updatingBusName = true;
+									}}
+									class="group flex h-8 w-8 items-center justify-center rounded-lg text-text-secondary/40 transition-all hover:bg-primary/10 hover:text-primary active:scale-90"
+									aria-label="Edit Business Name"
 								>
+									<Edit size={18} class="transition-transform group-hover:rotate-12" />
+								</button>
+							{/if}
+						</div>
+
+						<div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+							<div class="flex flex-wrap items-center gap-2">
+								<span
+									class="rounded-lg bg-primary px-2 py-1 text-[10px] font-black text-background uppercase"
+								>
+									{planInfo.type}
+								</span>
+								<span
+									class="rounded-lg bg-background/50 px-2 py-1 text-[10px] font-bold text-text-secondary uppercase"
+								>
+									{planInfo.period}
+								</span>
+								<span
+									class="ml-2 text-[10px] font-bold tracking-widest text-text-secondary uppercase"
+								>
+									Status: <span class={status === 'active' ? 'text-success' : 'text-error'}
+										>{status}</span
+									>
+								</span>
+							</div>
+
+							<span
+								class="rounded-xl bg-primary/10 px-3 py-1.5 text-[10px] font-black text-primary uppercase shadow-sm ring-2 ring-primary/20"
+							>
+								{myRole}
 							</span>
 						</div>
 					</div>
+
 					<div
-						class="flex h-14 w-14 items-center justify-center rounded-2xl bg-background/40 text-primary shadow-inner"
+						class="ml-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-background/40 text-primary shadow-inner"
 					>
 						<Crown size={32} />
 					</div>
@@ -149,7 +231,6 @@
 			{/if}
 		</section>
 	{/if}
-
 	<div class="mb-6 space-y-4 px-2">
 		<div class="flex items-center justify-between">
 			<div>
@@ -158,13 +239,39 @@
 					Manage access & roles
 				</p>
 			</div>
-			<button
-				class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-lg shadow-primary/20 transition-transform active:scale-90"
-			>
-				<UserPlus size={24} />
-			</button>
-		</div>
 
+			<div class="flex gap-3">
+				<button
+					class="group flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-high text-text-secondary transition-all hover:border-primary/30 hover:text-primary active:scale-90 disabled:opacity-50"
+					disabled={loading}
+					onclick={async () => {
+						loading = true;
+						memberStore.members = [];
+						await invalidate('data:members');
+						loading = false;
+					}}
+				>
+					<div
+						class={loading
+							? 'animate-spin'
+							: 'transition-transform duration-500 group-hover:rotate-180'}
+					>
+						<RefreshCw size={20} />
+					</div>
+				</button>
+
+				{#if myRole !== 'employee'}
+					<button
+						class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-90"
+						onclick={() => {
+							addingMember = true;
+						}}
+					>
+						<UserPlus size={24} strokeWidth={2.5} />
+					</button>
+				{/if}
+			</div>
+		</div>
 		<div class="group relative">
 			<div
 				class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-text-secondary transition-colors group-focus-within:text-primary"
@@ -247,8 +354,18 @@
 						>
 							{#if myRole === 'creator'}
 								<button
-									onclick={() =>
-										updateMemberRole(member.id, member.role === 'admin' ? 'employee' : 'admin')}
+									onclick={() => {
+										warnMsg =
+											'Are you sure you want to ' +
+											(member.role === 'admin' ? 'demote to Employee' : 'promote to Admin');
+										warnOnConfirm = async () => {
+											warnMsg = '';
+											await updateMemberRole(
+												member.id,
+												member.role === 'admin' ? 'employee' : 'admin'
+											);
+										};
+									}}
 									class="rounded-xl bg-surface-high px-4 py-2 text-[10px] font-black text-text-primary transition-colors hover:bg-primary/10 hover:text-primary"
 								>
 									{member.role === 'admin' ? 'Demote to Employee' : 'Promote to Admin'}
@@ -264,12 +381,20 @@
 								</button>
 							{/if}
 
-							<button
-								onclick={() => removeMember(member.id)}
-								class="flex h-10 w-10 items-center justify-center text-error/30 transition-colors hover:text-error"
-							>
-								<Trash2 size={18} />
-							</button>
+							{#if myRole === 'creator' || (myRole === 'admin' && member.role === 'employee')}
+								<button
+									onclick={() => {
+										warnOnConfirm = async () => {
+											warnMsg = '';
+											await removeMember(member.id);
+										};
+										warnMsg = `Are you sure you want to remove '${member.name}'?`;
+									}}
+									class="flex h-10 w-10 items-center justify-center text-error/30 transition-colors hover:text-error"
+								>
+									<Trash2 size={18} />
+								</button>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -282,3 +407,45 @@
 		</div>
 	{/await}
 </div>
+
+{#if loading}
+	<Toast toastType="loading" text="Please Wait..." />
+{/if}
+
+{#if errMsg}
+	<Toast toastType="error" text={errMsg} close={() => (errMsg = '')} />
+{/if}
+
+{#if successMsg}
+	<Toast toastType="success" text={successMsg} close={() => (successMsg = '')} />
+{/if}
+
+{#if warnMsg}
+	<Toast
+		toastType="warning"
+		text={warnMsg}
+		close={() => {
+			warnMsg = '';
+		}}
+		onConfirm={warnOnConfirm}
+	/>
+{/if}
+
+{#if updatingBusName}
+	<UpdateBusinessName
+		businessId={business?.id}
+		businessName={business?.name}
+		close={() => {
+			updatingBusName = false;
+		}}
+	/>
+{/if}
+
+{#if addingMember}
+	<AddMember
+		businessId={business?.id}
+		close={() => {
+			addingMember = false;
+		}}
+	/>
+{/if}
