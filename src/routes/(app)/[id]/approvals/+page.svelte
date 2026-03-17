@@ -7,19 +7,23 @@
 		ArrowRight,
 		Edit3,
 		Trash2,
-		X
+		X,
+		RefreshCw
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import transactionsApi from '$lib/api/transactionsApi';
 	import {
 		approvalStore,
 		isApplyFilterActive,
-		isClrearFilterActive
+		isClrearFilterActive,
+		transactionStore
 	} from '$lib/stores/store.svelte';
 	import { log } from '$lib/utils/helpers';
 	import { getTransactionDiff, diffLabels } from '$lib/utils/helpers'; // Ensure these are imported
 	import type { approval, approvalStatus, approvalType } from '$lib/utils/types.js';
 	import ApprovalPopUp from '$lib/components/ApprovalPopUp.svelte';
+	import { invalidate } from '$app/navigation';
+	import Toast from '$lib/components/Toast.svelte';
 
 	let { data } = $props();
 
@@ -80,32 +84,59 @@
 	};
 
 	let selectedApproval: approval | null = $state(null);
+
+	let refreshing = $state(false); // Local state for the spin animation
+	let errMsg = $state('');
+	let updating = $state(false);
 </script>
 
 <div class="min-h-screen bg-background p-4 pb-32 md:p-8">
 	<header class="mb-6 flex items-center justify-between px-2">
 		<div>
 			<h1 class="text-3xl font-black text-text-primary">Approvals</h1>
-			<p class="text-[10px] font-bold tracking-[0.2em] text-text-secondary uppercase">
+			<p class="text-[10px] font-black tracking-[0.2em] text-text-secondary uppercase">
 				Verification Queue
 			</p>
 		</div>
-		<button
-			onclick={() => (showFilters = !showFilters)}
-			class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-transform hover:cursor-pointer active:scale-90
+
+		<div class="flex gap-3">
+			<button
+				disabled={refreshing}
+				class="group flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-high text-text-secondary transition-all hover:border-primary/30 hover:text-primary active:scale-90 disabled:opacity-50"
+				onclick={async () => {
+					refreshing = true;
+					approvalStore.approvals = [];
+					await invalidate('data:approval');
+					refreshing = false;
+				}}
+			>
+				<div
+					class={refreshing
+						? 'animate-spin'
+						: 'transition-transform duration-500 group-hover:rotate-180'}
+				>
+					<RefreshCw size={20} />
+				</div>
+			</button>
+
+			<button
+				onclick={() => (showFilters = !showFilters)}
+				class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all hover:cursor-pointer active:scale-90
             {isClrearFilterActive('approval')
-				? 'bg-primary text-background'
-				: 'bg-surface-high text-text-primary'}"
-		>
-			{#if showFilters}<X size={20} />{:else}<Filter size={20} />{/if}
-			{#if isClrearFilterActive('approval') && !showFilters}
-				<span class="absolute -top-1 -right-1 flex h-3 w-3">
-					<span
-						class="relative inline-flex h-3 w-3 rounded-full border-2 border-background bg-primary"
-					></span>
-				</span>
-			{/if}
-		</button>
+					? 'bg-primary text-background shadow-lg shadow-primary/20'
+					: 'bg-surface-high text-text-primary'}"
+			>
+				{#if showFilters}<X size={20} />{:else}<Filter size={20} />{/if}
+
+				{#if isClrearFilterActive('approval') && !showFilters}
+					<span class="absolute -top-1 -right-1 flex h-3 w-3">
+						<span
+							class="relative inline-flex h-3 w-3 rounded-full border-2 border-background bg-primary"
+						></span>
+					</span>
+				{/if}
+			</button>
+		</div>
 	</header>
 
 	<div class="mb-6 flex rounded-2xl border border-outline-variant bg-surface-high p-1">
@@ -235,10 +266,7 @@
 	{:then res}
 		<div class="space-y-6">
 			{#each visibleRequests as req (req.id)}
-				<div
-					transition:fade
-					class="overflow-hidden rounded-4xl border border-outline-variant bg-surface"
-				>
+				<div in:fade class="overflow-hidden rounded-4xl border border-outline-variant bg-surface">
 					<div class="border-b border-outline-variant/30 bg-surface-high/30 p-5">
 						<div class="mb-3 flex items-center justify-between">
 							<div class="flex items-center gap-2">
@@ -417,10 +445,39 @@
 		onClose={() => (selectedApproval = null)}
 		categoryPromise={data.categoryPromise}
 		partyPromise={data.partyPromise}
-		onResolve={async (status, data, reason) => {
+		onResolve={async (approvalId, status, data, reason) => {
 			// 1. Call your API here (e.g., transactionsApi.resolveApproval)
+			log(`status:${status}\ndata:${JSON.stringify(data)}\n reason:${reason}`);
 			// 2. Refresh the local store/list
-			selectedApproval = null;
+			try {
+				updating = true;
+				await transactionsApi.patchApproval(approvalStore.businessId!, approvalId, {
+					...data,
+					reason,
+					status
+				});
+				approvalStore.approvals = [];
+				await invalidate('data:approval');
+				if (status === 'approved') {
+					transactionStore.transactions = {
+						stats: { cash_in: 0, cash_out: 0, net_balance: 0 },
+						transactions: []
+					};
+				}
+				updating = false;
+				selectedApproval = null;
+			} catch (err: any) {
+				updating = false;
+				errMsg = err.message || `something went wront while updating the Request!!!`;
+			}
 		}}
 	/>
+{/if}
+
+{#if errMsg}
+	<Toast toastType="error" text={errMsg} close={() => (errMsg = '')} />
+{/if}
+
+{#if updating}
+	<Toast toastType="loading" text="Updating Request" />
 {/if}

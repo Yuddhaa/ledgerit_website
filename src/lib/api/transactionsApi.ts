@@ -72,11 +72,12 @@ export default {
         return api.Get<{ requests: approval[] }>(url, customFetch);
     },
 
-    patchApproval: (businessId: string, approvalId: string, tran: approvalTran, customFetch?: typeof fetch) => api.Patch(`/business/${businessId}/transactions/approvals/${approvalId}`, tran, customFetch)
+    patchApproval: (businessId: string, approvalId: string, tran: approvalTran, customFetch?: typeof fetch) =>
+        api.Patch(`/business/${businessId}/transactions/approvals/${approvalId}`, tran, customFetch)
 }
 
 export interface approvalTran {
-    amount: number
+    amount: string
     direction: "in" | "out"
     category_id: string | null
     category_name: string | null

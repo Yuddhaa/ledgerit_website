@@ -89,7 +89,7 @@ export interface transactionChange {
     direction: "in" | "out"
     category_id: string
     party_id: string
-    mode: string
+    mode: "online" | "cash" | "cheque"
     receipt_no: string
     description: string
     category_name: string

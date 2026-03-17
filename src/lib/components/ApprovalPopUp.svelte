@@ -14,13 +14,24 @@
 	import type { approval, transactionChange, approvalStatus } from '$lib/utils/types';
 	import { auth } from '$lib/stores/store.svelte';
 
-	let { Approval, partyPromise, categoryPromise, onResolve, onClose } = $props<{
+	let {
+		Approval,
+		partyPromise,
+		categoryPromise,
+		onResolve,
+		onClose
+	}: {
 		Approval: approval;
 		partyPromise: any;
 		categoryPromise: any;
-		onResolve: (status: approvalStatus, data: transactionChange, reason: string) => void;
+		onResolve: (
+			approvalId: string,
+			status: approvalStatus,
+			data: transactionChange,
+			reason: string
+		) => void;
 		onClose: () => void;
-	}>();
+	} = $props();
 
 	const isReviewer = $derived(Approval.requested_by_id !== auth.user?.id);
 
@@ -140,7 +151,7 @@
 						<div class="space-y-1">
 							<label class="ml-1 text-[10px] font-bold text-text-secondary uppercase">Amount</label>
 							<input
-								type="number"
+								type="text"
 								bind:value={editedData.amount}
 								class="w-full rounded-2xl bg-background p-4 text-lg font-black ring-1 ring-outline-variant outline-none focus:ring-2 focus:ring-primary"
 							/>
@@ -274,7 +285,7 @@
 							>Reject</button
 						>
 						<button
-							onclick={() => onResolve('approved', editedData, adminReason)}
+							onclick={() => onResolve(Approval.id, 'approved', editedData, adminReason)}
 							class="flex-[2] rounded-2xl bg-primary py-4 text-sm font-black text-background shadow-lg shadow-primary/20 transition-all hover:cursor-pointer active:scale-95"
 						>
 							<CheckCircle2 size={18} class="mr-1 inline" /> Approve
@@ -287,14 +298,14 @@
 						>
 						<button
 							disabled={!adminReason}
-							onclick={() => onResolve('rejected', editedData, adminReason)}
+							onclick={() => onResolve(Approval.id, 'rejected', editedData, adminReason)}
 							class="flex-[2] rounded-2xl bg-error py-4 text-sm font-black text-background shadow-lg hover:cursor-pointer disabled:opacity-50"
 							>Confirm Reject</button
 						>
 					{/if}
 				{:else}
 					<button
-						onclick={() => onResolve('pending', editedData, adminReason)}
+						onclick={() => onResolve(Approval.id, 'pending', editedData, adminReason)}
 						class="w-full rounded-2xl bg-primary py-4 text-sm font-black text-background shadow-lg hover:cursor-pointer active:scale-95"
 					>
 						<Save size={18} class="mr-1 inline" /> Update Request

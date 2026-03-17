@@ -5,7 +5,8 @@ import { getCategoryPromise, getPartyPromise } from "$lib/utils/helpers";
 import type { approval } from "$lib/utils/types";
 import type { PageLoad } from "./$types";
 
-export const load: PageLoad = async ({ fetch, params, parent }) => {
+export const load: PageLoad = async ({ depends, fetch, params, parent }) => {
+    depends('data:approval')
     await parent()
     const businessId = params.id
 
@@ -14,7 +15,7 @@ export const load: PageLoad = async ({ fetch, params, parent }) => {
         approvalPromise = Promise.resolve({ requests: approvalStore.approvals })
     } else {
         approvalStore.businessId = businessId
-        approvalPromise = transactionsApi.listApprovals(businessId, {}, fetch)
+        approvalPromise = transactionsApi.listApprovals(businessId, approvalStore.filter, fetch)
             .then((res) => {
                 approvalStore.approvals = res.requests ? res.requests : []
                 return res
