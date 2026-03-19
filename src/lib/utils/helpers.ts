@@ -68,6 +68,28 @@ export function getPartyPromise(businessId: string, customFetch?: typeof fetch):
     return partyPromise
 }
 
+/**
+ * getPartyPlacesPromise returns a promise and on resove places in parties of a business.
+ * */
+export function getPartyPlacesPromise(businessId: string, customFetch?: typeof fetch): Promise<{
+    places: string[];
+}> {
+    let placesPromise: Promise<{ places: string[] }>
+    if (partiesStore.places.length > 0 || partiesStore.businessId === businessId) {
+        placesPromise = Promise.resolve({ places: partiesStore.places })
+    } else {
+        placesPromise = partiesApi.listPlaces(businessId, customFetch)
+            .then((res) => {
+                partiesStore.businessId = businessId
+                partiesStore.places = res.places;
+                return res
+            });
+    }
+    return placesPromise
+}
+
+
+
 
 /**
  * getCategoryPromise returns a promise and on resove parties of a business.

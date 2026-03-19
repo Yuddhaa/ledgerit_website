@@ -19,6 +19,8 @@
 		plans.current_plan?.status === 'active' ? plans.current_plan?.base_plan : null
 	);
 
+	let role = $derived(businessStore.selected?.role);
+
 	// --- State ---
 	let isYearly = $state(false);
 	let extraMembers = $derived(data.plans.current_plan ? Number(data.plans.current_plan.add_on) : 0);
@@ -340,7 +342,6 @@
 </script>
 
 <svelte:head>
-	<title>Ledgerit Plans</title>
 	<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </svelte:head>
 
@@ -626,7 +627,7 @@
 			<!-- ****************************************************************************************************** -->
 			<!-- if plan is owner lock the plans section with a toast -->
 			<!-- ****************************************************************************************************** -->
-			{#if activePlan === 'owner'}
+			{#if activePlan === 'owner' && role === 'admin'}
 				<div
 					class="absolute inset-x-0 -inset-y-5 z-10 mt-4 flex items-start justify-center rounded-4xl bg-background/40 backdrop-blur-sm transition-all duration-500 md:mt-0 md:items-center"
 				>
@@ -658,13 +659,44 @@
 					</div>
 				</div>
 			{/if}
+			{#if role !== 'creator'}
+				<div
+					class="absolute inset-x-0 -inset-y-5 z-10 mt-4 flex items-start justify-center rounded-4xl bg-background/40 backdrop-blur-sm transition-all duration-500 md:mt-0 md:items-center"
+				>
+					<div
+						class="mx-4 max-w-md rounded-3xl border-2 border-primary bg-surface p-8 text-center shadow-2xl"
+					>
+						<div
+							class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-container text-primary"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+								/></svg
+							>
+						</div>
+						<h3 class="text-2xl font-bold text-text-primary">Plans Page Locked</h3>
+						<p class="mt-2 text-sm leading-relaxed text-text-secondary">
+							Only <strong>creator</strong> of the business can buy/update subscription.
+						</p>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- ****************************************************************************************************** -->
 		<!-- offer code section -->
 		<!-- ****************************************************************************************************** -->
 		<!-- add a ! sign behind plans.is_trial_available -->
-		{#if plans.is_offer_available}
+		{#if plans.is_offer_available && role === 'creator'}
 			<div class="mt-16 flex justify-center">
 				<div
 					class="w-full max-w-2xl rounded-3xl border p-8 backdrop-blur-md transition-all duration-500

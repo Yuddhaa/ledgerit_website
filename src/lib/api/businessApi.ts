@@ -21,5 +21,8 @@ export default {
         api.Patch(`/business/${businessId}/members`, params, customFetch),
 
     delMember: (businessId: string, memberId: string, customFetch?: typeof fetch) =>
-        api.Delete(`/business/${businessId}/members/${memberId}`, customFetch),
+        api.Delete(`/business/${businessId}/members/${memberId}`, null, customFetch),
+
+    delBusiness: (businessId: string, customFetch?: typeof fetch) =>
+        api.Delete(`/business/${businessId}`, null, customFetch),
 }

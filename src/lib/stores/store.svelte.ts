@@ -99,9 +99,10 @@ export const approvalStore = $state<{
 
 
 // ************************************************************************************************
-export const partiesStore = $state<{ businessId: string | null; parties: party[] }>({
+export const partiesStore = $state<{ businessId: string | null; parties: party[]; places: string[] }>({
     businessId: null,
     parties: [],
+    places: []
 })
 
 // ************************************************************************************************

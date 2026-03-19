@@ -66,7 +66,7 @@
 		<div class="flex items-center gap-3">
 			<button
 				onclick={() => (ui.showUniversalSettings = true)}
-				class="flex h-10 w-12 items-center justify-center rounded-full bg-surface-high text-primary transition-transform active:scale-90"
+				class="flex h-10 w-12 items-center justify-center rounded-full bg-surface-high text-primary transition-transform hover:cursor-pointer active:scale-90"
 			>
 				{#if auth.user?.picture}
 					<img
