@@ -19,15 +19,18 @@
 	import partiesApi from '$lib/api/partiesApi';
 	import type { category, party } from '$lib/utils/types';
 	import categoriesApi from '$lib/api/categoriesApi';
+	import { onMount } from 'svelte';
+	import { Capacitor } from '@capacitor/core';
 
 	interface Props {
 		type: 'parties' | 'categories';
 		promise: Promise<any>;
 		placesPromise?: Promise<any>;
 		close: () => void;
+		onSelect?: (id: string) => void;
 	}
 
-	let { type, promise, placesPromise, close }: Props = $props();
+	let { type, promise, placesPromise, close, onSelect }: Props = $props();
 
 	const businessId = businessStore.selected!.id;
 	const role = businessStore.selected!.role;
@@ -48,6 +51,12 @@
 	let successMsg = $state('');
 
 	let selectedPlaces = $state<string[]>([]);
+	onMount(() => {
+		if (Capacitor.getPlatform() == 'web') {
+		} else {
+		}
+	});
+
 	let form = $state({ name: '', place: '', phone_number: '' });
 
 	function resetForm() {
@@ -265,6 +274,7 @@
 			{#each filteredItems as item (item.id)}
 				{@const p = item as party}
 				<div
+					onclick={() => onSelect?.(item.id)}
 					transition:slide
 					class="rounded-3xl border border-outline-variant/50 bg-background/30 p-4 transition-all hover:border-primary/30"
 				>

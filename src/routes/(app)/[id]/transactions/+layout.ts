@@ -1,12 +1,14 @@
 import partiesApi from "$lib/api/partiesApi";
 import transactionsApi from "$lib/api/transactionsApi";
-import { partiesStore, transactionStore } from "$lib/stores/store.svelte";
-import { getCategoryPromise, getPartyPromise } from "$lib/utils/helpers";
+import { transactionStore } from "$lib/stores/store.svelte";
+import { getCategoryPromise, getPartyPlacesPromise, getPartyPromise, log } from "$lib/utils/helpers";
 import type { transaction, tranStats } from "$lib/utils/types";
-import type { PageLoad } from "./$types";
+import type { LayoutLoad, } from "./$types";
 
-export const load: PageLoad = async ({ params, parent, fetch }) => {
+export const load: LayoutLoad = async ({ depends, params, parent, fetch }) => {
+    depends('layout:transactions')
     await parent();
+    log(`in transaction page load, started`)
     const businessId = params.id;
 
     // 1. Check if we have cached data for THIS business
@@ -33,10 +35,12 @@ export const load: PageLoad = async ({ params, parent, fetch }) => {
                 return res;
             });
     }
+    log(`in transaction page load, ended`)
 
     return {
         transactionsPromise,
         partyPromise: getPartyPromise(businessId, fetch),
         categoryPromise: getCategoryPromise(businessId, fetch),
+        partyPlacespromise: getPartyPlacesPromise(businessId, fetch)
     };
 };

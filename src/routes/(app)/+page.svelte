@@ -121,6 +121,8 @@
 			{@const status = getStatusConfig(b.subscriptions_status)}
 
 			<a
+				data-sveltekit-preload-data="false"
+				data-sveltekit-preload-code="false"
 				href={`/${b.id}/transactions`}
 				class="flex flex-col overflow-hidden rounded-3xl border border-outline-variant shadow-sm transition-all active:scale-[0.98]"
 				transition:slide

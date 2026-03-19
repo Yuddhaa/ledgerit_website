@@ -73,7 +73,20 @@ export default {
     },
 
     patchApproval: (businessId: string, approvalId: string, tran: approvalTran, customFetch?: typeof fetch) =>
-        api.Patch(`/business/${businessId}/transactions/approvals/${approvalId}`, tran, customFetch)
+        api.Patch(`/business/${businessId}/transactions/approvals/${approvalId}`, tran, customFetch),
+
+    create: (businessId: string, params: minTran, customFetch?: typeof fetch) =>
+        api.Post<{}>(`/business/${businessId}/transactions`, params, customFetch),
+}
+
+export interface minTran {
+    amount: string
+    direction: "in" | "out"
+    category_id: string
+    party_id: string
+    mode: "online" | "cash" | "cheque"
+    receipt_no: string
+    description: string
 }
 
 export interface approvalTran {

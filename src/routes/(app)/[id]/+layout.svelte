@@ -55,7 +55,7 @@
 					await goto('/');
 					isLoading = false;
 				}}
-				class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-high text-text-secondary"
+				class="flex h-8 w-8 items-center justify-center rounded-full bg-surface-high text-text-secondary hover:cursor-pointer"
 			>
 				<ChevronLeft size={20} />
 			</button>
@@ -68,6 +68,8 @@
 			<div class="hidden items-center gap-2 md:flex">
 				{#each navItems as item}
 					<a
+						data-sveltekit-preload-data="false"
+						data-sveltekit-preload-code="false"
 						href={`/${businessStore.selected?.id}/${item.path}`}
 						class="rounded-xl px-4 py-2 text-sm font-bold transition-colors {isActive(item.path)
 							? 'bg-primary text-background'

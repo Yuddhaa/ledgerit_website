@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Filter, Plus, Trash2, Wallet, X } from 'lucide-svelte';
+	import { Filter, Plus, RefreshCw, Trash2, Wallet, X } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import transactionsApi from '$lib/api/transactionsApi';
 	import {
@@ -11,6 +11,8 @@
 	} from '$lib/stores/store.svelte.js';
 	import { log } from '$lib/utils/helpers';
 	import type { transaction } from '$lib/utils/types.js';
+	import { invalid } from '@sveltejs/kit';
+	import { invalidate } from '$app/navigation';
 
 	let { data } = $props();
 
@@ -83,6 +85,16 @@
 		});
 		return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
 	}
+
+	let refreshing = $state(false);
+
+	async function onRefresh() {
+		refreshing = true;
+		transactionStore.businessId = null;
+		// Note: Ensure your dependency string matches exactly what's in +layout.ts
+		await invalidate('layout:transactions');
+		refreshing = false;
+	}
 </script>
 
 <div class="min-h-screen bg-background p-4 pb-32 md:p-8">
@@ -93,11 +105,26 @@
 				History & Logs
 			</p>
 		</div>
+
 		<div class="flex gap-3">
+			<button
+				disabled={refreshing}
+				onclick={onRefresh}
+				class="group flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-high text-text-secondary transition-all hover:border-primary/30 hover:text-primary active:scale-90 disabled:opacity-50"
+			>
+				<div
+					class={refreshing
+						? 'animate-spin'
+						: 'transition-transform duration-500 group-hover:rotate-180'}
+				>
+					<RefreshCw size={20} />
+				</div>
+			</button>
+
 			<button
 				onclick={() => (showFilters = !showFilters)}
 				class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all hover:cursor-pointer active:scale-90
-	{isClrearFilterActive('tran')
+			{isClrearFilterActive('tran')
 					? 'bg-primary text-background shadow-lg shadow-primary/20'
 					: 'bg-surface-high text-text-primary'}"
 			>
@@ -118,15 +145,19 @@
 					</span>
 				{/if}
 			</button>
-			<a
-				href={`/${data.businessId}/transactions`}
-				class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-xl shadow-primary/20 transition-transform hover:cursor-pointer active:scale-90"
-			>
-				<Plus size={28} strokeWidth={3} />
-			</a>
+
+			{#await activePromise then res}
+				<a
+					data-sveltekit-preload-code="false"
+					data-sveltekit-preload-data="false"
+					href={`/${data.businessId}/transactions/addTransaction`}
+					class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-xl shadow-primary/20 transition-transform hover:cursor-pointer active:scale-90"
+				>
+					<Plus size={28} strokeWidth={3} />
+				</a>
+			{/await}
 		</div>
 	</header>
-
 	{#if showFilters}
 		<div
 			transition:slide
