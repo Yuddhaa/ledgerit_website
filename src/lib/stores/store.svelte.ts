@@ -46,10 +46,10 @@ export const memberStore = $state<{
 
 // ************************************************************************************************
 export interface tranFilter {
-    user_id?: string
-    category_id?: string
-    party_id?: string
-    mode?: "" | "cash" | "online" | "cheque"
+    user_id: string[]
+    category_id: string[]
+    party_id: string[]
+    mode: ("cash" | "online" | "cheque")[]
     direction?: "" | "in" | "out"
     sortBy?: "created_at" | "amount"
     order?: "asc" | "desc"
@@ -64,9 +64,11 @@ export const transactionStore = $state<{
 }>({
     businessId: null,
     filter: {
+        user_id: [],
+        category_id: [],
+        party_id: [],
+        mode: [],
         direction: "",
-        mode: "",
-        party_id: "",
         sortBy: "created_at",
         order: "desc",
     },
@@ -116,7 +118,11 @@ export const categoryStore = $state<{ businessId: string | null; categories: cat
  * retuns true if Apply button should be active
  */
 export function isApplyFilterActive(page: "tran" | "approval" = "tran", filter: tranFilter | approvalFilter): boolean {
-    if (page === "tran") return JSON.stringify(transactionStore.filter) !== JSON.stringify(filter);
+    if (page === "tran") {
+        // log(`tranFilter.filter:${JSON.stringify(transactionStore.filter)}`)
+        // log(`input filter:${JSON.stringify(filter)}`)
+        return JSON.stringify(transactionStore.filter) !== JSON.stringify(filter);
+    }
     else {
         log(`approvalStore.filter:${JSON.stringify(approvalStore.filter)}`)
         log(`filter:${JSON.stringify(filter)}`)
@@ -130,12 +136,16 @@ export function isApplyFilterActive(page: "tran" | "approval" = "tran", filter: 
 export function isClrearFilterActive(page: "tran" | "approval" = "tran"): boolean {
     if (page === "tran") {
         let tempDefault = {
+            user_id: [],
+            category_id: [],
+            party_id: [],
+            mode: [],
             direction: "",
-            mode: "",
-            party_id: "",
             sortBy: "created_at",
             order: "desc",
         }
+        log(`if tran in clear:transactionStore.filter:${JSON.stringify(transactionStore.filter)}`)
+        log(`if tran in clear:tempDefault:${JSON.stringify(tempDefault)}`)
         return JSON.stringify(transactionStore.filter) !== JSON.stringify(tempDefault);
     } else {
         let tempDefault = {
@@ -165,7 +175,12 @@ export function clearStore() {
 
     // 4. Reset Transaction Store
     transactionStore.businessId = null;
-    transactionStore.filter = {};
+    transactionStore.filter = {
+        user_id: [],
+        category_id: [],
+        party_id: [],
+        mode: [],
+    }
     transactionStore.transactions = {
         stats: { cash_in: 0, cash_out: 0, net_balance: 0 },
         transactions: []

@@ -9,10 +9,10 @@ export default {
     listAll: (
         businessId: string,
         params: {
-            user_id?: string;
-            category_id?: string;
-            party_id?: string;
-            mode?: string;
+            user_id?: string[];
+            category_id?: string[];
+            party_id?: string[];
+            mode?: string[];
             direction?: string;
             sortBy?: string;
             order?: string;
@@ -26,7 +26,13 @@ export default {
 
         // Only append parameters that actually have a value
         Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== "") {
+            if (value === undefined || value === "") return;
+
+            if (Array.isArray(value)) {
+                value.forEach(v => {
+                    if (v) query.append(key, v);
+                });
+            } else {
                 query.append(key, value);
             }
         });
@@ -77,6 +83,9 @@ export default {
 
     create: (businessId: string, params: minTran, customFetch?: typeof fetch) =>
         api.Post<{}>(`/business/${businessId}/transactions`, params, customFetch),
+
+    delete: (businessId: string, tranId: string, customFetch?: typeof fetch) =>
+        api.Delete(`/business/${businessId}/transactions/${tranId}`, null, customFetch),
 }
 
 export interface minTran {

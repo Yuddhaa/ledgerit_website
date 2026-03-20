@@ -1,6 +1,7 @@
+import businessApi from "$lib/api/businessApi";
 import partiesApi from "$lib/api/partiesApi";
 import transactionsApi from "$lib/api/transactionsApi";
-import { transactionStore } from "$lib/stores/store.svelte";
+import { memberStore, transactionStore, type member } from "$lib/stores/store.svelte";
 import { getCategoryPromise, getPartyPlacesPromise, getPartyPromise, log } from "$lib/utils/helpers";
 import type { transaction, tranStats } from "$lib/utils/types";
 import type { LayoutLoad, } from "./$types";
@@ -35,12 +36,29 @@ export const load: LayoutLoad = async ({ depends, params, parent, fetch }) => {
                 return res;
             });
     }
+
+    let membersPromise: Promise<{ members: member[] }>
+    if (memberStore.members.length > 0 && businessId === memberStore.businessId) {
+        membersPromise = Promise.resolve({
+            members: memberStore.members.filter((v) => { if (v.role == "employee") return v })
+        })
+    } else {
+        memberStore.businessId = businessId
+        membersPromise = businessApi.listMembers(businessId, fetch)
+            .then((res) => {
+                memberStore.members = res.members
+                return res
+            })
+    }
+
+
     log(`in transaction page load, ended`)
 
     return {
         transactionsPromise,
         partyPromise: getPartyPromise(businessId, fetch),
         categoryPromise: getCategoryPromise(businessId, fetch),
-        partyPlacespromise: getPartyPlacesPromise(businessId, fetch)
+        partyPlacespromise: getPartyPlacesPromise(businessId, fetch),
+        membersPromise,
     };
 };

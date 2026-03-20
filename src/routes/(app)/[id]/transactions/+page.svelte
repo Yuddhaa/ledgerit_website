@@ -1,32 +1,33 @@
 <script lang="ts">
-	import { Filter, Plus, RefreshCw, Trash2, Wallet, X } from 'lucide-svelte';
+	import { Plus, RefreshCw, Trash2, Wallet, X, Filter } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
+	import { invalidate } from '$app/navigation';
 	import transactionsApi from '$lib/api/transactionsApi';
 	import {
 		transactionStore,
 		isClrearFilterActive,
-		isApplyFilterActive,
-		businessStore,
-		partiesStore
+		businessStore
 	} from '$lib/stores/store.svelte.js';
 	import { log } from '$lib/utils/helpers';
-	import type { transaction } from '$lib/utils/types.js';
-	import { invalid } from '@sveltejs/kit';
-	import { invalidate } from '$app/navigation';
+	import type { transaction, tranStats } from '$lib/utils/types.js';
+	import TranFilter from '$lib/components/TranFilter.svelte';
+	import PaymentSuccess from '$lib/components/paymentSuccess.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 
 	let { data } = $props();
 
-	let filters = $state({ ...transactionStore.filter });
+	// --- State Management ---
 	let showFilters = $state(false);
 	let manualPromise = $state<Promise<any> | null>(null);
+	let refreshing = $state(false);
+
+	// Derived promise ensures UI stays in sync with either initial load or filter changes
 	let activePromise = $derived(manualPromise || data.transactionsPromise);
 
-	let canClear = $derived(isClrearFilterActive());
-	let canApply = $derived(isApplyFilterActive('tran', filters));
-
-	async function applyFilters() {
-		transactionStore.filter = { ...filters };
-		manualPromise = transactionsApi.listAll(data.businessId, filters).then((res) => {
+	// --- Handlers ---
+	async function handleApplyFilters(newFilters: any) {
+		transactionStore.filter = { ...newFilters };
+		manualPromise = transactionsApi.listAll(data.businessId, newFilters).then((res) => {
 			transactionStore.transactions = {
 				stats: res.stats,
 				transactions: res.transactions ? res.transactions : []
@@ -36,15 +37,46 @@
 		showFilters = false;
 	}
 
-	function resetFilters() {
-		filters = { direction: '', mode: '', party_id: '', sortBy: 'created_at', order: 'desc' };
-		applyFilters();
+	function handleReset() {
+		const defaults = {
+			user_id: [],
+			category_id: [],
+			party_id: [],
+			mode: [],
+			direction: '',
+			sortBy: 'created_at',
+			order: 'desc'
+		};
+		handleApplyFilters(defaults);
 	}
 
-	function handleDelete(id: string) {
-		log('Deleting transaction:', id);
+	function onRefresh() {
+		refreshing = true;
+		transactionStore.businessId = null;
+		invalidate('layout:transactions');
+		refreshing = false;
 	}
 
+	let isLoading = $state(false);
+	let warnMsg = $state('');
+	let errMsg = $state('');
+	let successMsg = $state('');
+	let warnOnConfirm = $state(() => {});
+	async function handleDelete(id: string) {
+		isLoading = true;
+		try {
+			await transactionsApi.delete(data.businessId, id);
+			transactionStore.businessId = null;
+			await invalidate('layout:transactions');
+			isLoading = false;
+			successMsg = 'Transaction Deleted';
+		} catch (err: any) {
+			isLoading = false;
+			errMsg = err.message || `something went wront while deleting transaction!!!`;
+		}
+	}
+
+	// --- Formatting Helpers ---
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat('en-IN', {
 			style: 'currency',
@@ -66,7 +98,6 @@
 		const today = new Date();
 		if (date.toDateString() === today.toDateString()) return 'Today';
 
-		// Fixed: Explicitly type the options to avoid LSP "no overload match"
 		const options: Intl.DateTimeFormatOptions = {
 			day: '2-digit',
 			month: 'short',
@@ -85,16 +116,6 @@
 		});
 		return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
 	}
-
-	let refreshing = $state(false);
-
-	async function onRefresh() {
-		refreshing = true;
-		transactionStore.businessId = null;
-		// Note: Ensure your dependency string matches exactly what's in +layout.ts
-		await invalidate('layout:transactions');
-		refreshing = false;
-	}
 </script>
 
 <div class="min-h-screen bg-background p-4 pb-32 md:p-8">
@@ -107,24 +128,35 @@
 		</div>
 
 		<div class="flex gap-3">
-			<button
-				disabled={refreshing}
-				onclick={onRefresh}
-				class="group flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-high text-text-secondary transition-all hover:border-primary/30 hover:text-primary active:scale-90 disabled:opacity-50"
-			>
-				<div
-					class={refreshing
-						? 'animate-spin'
-						: 'transition-transform duration-500 group-hover:rotate-180'}
+			{#await activePromise then res}
+				<button
+					disabled={refreshing}
+					onclick={onRefresh}
+					class="group flex h-12 w-12 items-center justify-center rounded-2xl border border-outline-variant bg-surface-high text-text-secondary transition-all hover:cursor-pointer hover:border-primary/30 hover:text-primary active:scale-90 disabled:opacity-50"
 				>
-					<RefreshCw size={20} />
-				</div>
-			</button>
+					<div
+						class={refreshing
+							? 'animate-spin'
+							: 'transition-transform duration-500 group-hover:rotate-180'}
+					>
+						<RefreshCw size={20} />
+					</div>
+				</button>
+
+				<a
+					data-sveltekit-preload-code="false"
+					data-sveltekit-preload-data="false"
+					href={`/${data.businessId}/transactions/addTransaction`}
+					class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-xl shadow-primary/20 transition-transform hover:cursor-pointer active:scale-90"
+				>
+					<Plus size={28} strokeWidth={3} />
+				</a>
+			{/await}
 
 			<button
 				onclick={() => (showFilters = !showFilters)}
 				class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all hover:cursor-pointer active:scale-90
-			{isClrearFilterActive('tran')
+				{isClrearFilterActive('tran')
 					? 'bg-primary text-background shadow-lg shadow-primary/20'
 					: 'bg-surface-high text-text-primary'}"
 			>
@@ -145,171 +177,32 @@
 					</span>
 				{/if}
 			</button>
-
-			{#await activePromise then res}
-				<a
-					data-sveltekit-preload-code="false"
-					data-sveltekit-preload-data="false"
-					href={`/${data.businessId}/transactions/addTransaction`}
-					class="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-background shadow-xl shadow-primary/20 transition-transform hover:cursor-pointer active:scale-90"
-				>
-					<Plus size={28} strokeWidth={3} />
-				</a>
-			{/await}
 		</div>
 	</header>
+
 	{#if showFilters}
-		<div
-			transition:slide
-			class="mb-6 rounded-3xl border border-outline-variant bg-surface p-6 shadow-sm"
-		>
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-				<div class="grid grid-cols-2 gap-3">
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>Direction
-							<select
-								bind:value={filters.direction}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none hover:cursor-pointer focus:ring-2 focus:ring-primary"
-							>
-								<option value="">All Types</option>
-
-								<option value="in">Cash In (+)</option>
-
-								<option value="out">Cash Out (-)</option>
-							</select>
-						</label>
-					</div>
-
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>Mode
-							<select
-								bind:value={filters.mode}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none hover:cursor-pointer focus:ring-2 focus:ring-primary"
-							>
-								<option value="">All Modes</option>
-
-								<option value="cash">Cash</option>
-
-								<option value="online">Online</option>
-
-								<option value="cheque">Cheque</option>
-							</select>
-						</label>
-					</div>
-				</div>
-
-				<div class="space-y-1">
-					<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-						>Filter by Party
-						<select
-							bind:value={filters.party_id}
-							class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none hover:cursor-pointer focus:ring-2 focus:ring-primary"
-						>
-							<option value="">All Parties</option>
-
-							{#each partiesStore.parties as party}
-								<option value={party.id}>{party.name}</option>
-							{/each}
-						</select>
-					</label>
-				</div>
-
-				<div class="grid grid-cols-2 gap-3">
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>From
-							<input
-								type="date"
-								bind:value={filters.from}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none hover:cursor-pointer focus:ring-2 focus:ring-primary"
-							/></label
-						>
-					</div>
-
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>To
-
-							<input
-								type="date"
-								bind:value={filters.to}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none hover:cursor-pointer focus:ring-2 focus:ring-primary"
-							/></label
-						>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-2 gap-3">
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>Sort By
-							<select
-								bind:value={filters.sortBy}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant hover:cursor-pointer"
-							>
-								<option value="created_at">Date</option>
-
-								<option value="amount">Amount</option>
-							</select>
-						</label>
-					</div>
-
-					<div class="space-y-1">
-						<label class="ml-1 text-[10px] font-black text-text-secondary uppercase"
-							>Order
-
-							<select
-								bind:value={filters.order}
-								class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant hover:cursor-pointer"
-							>
-								<option value="desc">Newest / Highest</option>
-
-								<option value="asc">Oldest / Lowest</option>
-							</select>
-						</label>
-					</div>
-				</div>
-			</div>
-
-			<div class="mt-6 flex gap-3">
-				<button
-					onclick={resetFilters}
-					disabled={!canClear}
-					class="flex-1 rounded-2xl py-3 font-black transition-all active:scale-95
-                {canClear
-						? 'cursor-pointer bg-surface-high text-text-primary hover:bg-surface-variant'
-						: 'cursor-not-allowed bg-disabled text-text-disabled'}"
-				>
-					Clear
-				</button>
-
-				<button
-					onclick={applyFilters}
-					disabled={!canApply}
-					class="flex-2 rounded-2xl py-3 font-black shadow-lg transition-all
-    {canApply
-						? 'bg-primary text-background shadow-primary/20 hover:cursor-pointer active:scale-95'
-						: 'cursor-not-allowed bg-primary/40 text-background/50 shadow-none'}"
-				>
-					Apply Filters
-				</button>
-			</div>
-		</div>
+		<TranFilter
+			initialFilters={transactionStore.filter}
+			onApply={handleApplyFilters}
+			onReset={handleReset}
+		/>
 	{/if}
+
 	{#await activePromise}
 		<div class="flex flex-col items-center justify-center py-20 opacity-50">
 			<div
 				class="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"
 			></div>
 		</div>
-	{:then res}
+	{:then res: {
+        stats: tranStats;
+        transactions: transaction[];
+    }}
 		<div class="mb-10 rounded-4xl border border-outline-variant bg-surface p-6 shadow-sm">
 			<div class="flex items-center justify-between">
 				<div class="space-y-1">
 					<p class="text-[10px] font-bold tracking-widest text-text-secondary uppercase">
-						{isClrearFilterActive('tran') ? 'Filterd' : 'Business'} Net Balance
+						{isClrearFilterActive('tran') ? 'Filtered' : 'Business'} Net Balance
 					</p>
 					<h2 class="text-3xl font-black text-text-primary">
 						{formatCurrency(res.stats.net_balance)}
@@ -318,14 +211,10 @@
 				<div class="h-12 w-px bg-outline-variant"></div>
 				<div class="space-y-2 text-right">
 					<p class="text-[10px] font-bold text-success uppercase">
-						{isClrearFilterActive('tran') ? '[Filterd]' : '[Total]'} in: {formatCurrency(
-							res.stats.cash_in
-						)}
+						IN: {formatCurrency(res.stats.cash_in)}
 					</p>
 					<p class="text-[10px] font-bold text-error uppercase">
-						{isClrearFilterActive('tran') ? '[Filterd]' : '[Total]'} out: {formatCurrency(
-							res.stats.cash_out
-						)}
+						OUT: {formatCurrency(res.stats.cash_out)}
 					</p>
 				</div>
 			</div>
@@ -342,7 +231,8 @@
 					{#each txs as tx (tx.id)}
 						<div
 							transition:fade
-							class="relative rounded-3xl border border-outline-variant bg-surface p-5 active:bg-surface-high"
+							class="relative rounded-3xl border border-outline-variant bg-surface p-5 transition-colors active:bg-surface-high"
+							onclick={() => log('clicked on individaul tran')}
 						>
 							<div class="flex items-start justify-between">
 								<div class="space-y-1">
@@ -369,9 +259,20 @@
 							>
 								<span>Entry by: <span class="text-text-primary">{tx.user_name}</span></span>
 								{#if businessStore.selected?.role !== 'employee'}
-									<button onclick={() => handleDelete(tx.id)} class="text-error/40 hover:text-error"
-										><Trash2 size={16} /></button
+									<button
+										onclick={(e) => {
+											e.stopPropagation();
+											warnMsg =
+												'Are you sure you want to delete this transaction, its irreversible.';
+											warnOnConfirm = async () => {
+												warnMsg = '';
+												await handleDelete(tx.id);
+											};
+										}}
+										class="text-error/40 transition-colors hover:cursor-pointer hover:text-error"
 									>
+										<Trash2 size={16} />
+									</button>
 								{/if}
 							</div>
 						</div>
@@ -380,9 +281,32 @@
 			{:else}
 				<div class="py-20 text-center opacity-40">
 					<Wallet size={48} class="mx-auto mb-4" />
-					<p class="font-bold">No transactions recorded</p>
+					<p class="font-bold uppercase tracking-widest text-xs">No transactions found</p>
 				</div>
 			{/each}
 		</div>
 	{/await}
 </div>
+
+{#if isLoading}
+	<Toast toastType="loading" text="Please Wait..." />
+{/if}
+
+{#if errMsg}
+	<Toast toastType="error" text={errMsg} close={() => (errMsg = '')} />
+{/if}
+
+{#if successMsg}
+	<Toast toastType="success" text={successMsg} close={() => (successMsg = '')} />
+{/if}
+
+{#if warnMsg}
+	<Toast
+		toastType="warning"
+		text={warnMsg}
+		close={() => {
+			warnMsg = '';
+		}}
+		onConfirm={warnOnConfirm}
+	/>
+{/if}
