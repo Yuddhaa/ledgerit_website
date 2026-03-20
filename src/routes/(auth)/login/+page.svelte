@@ -32,8 +32,8 @@
 			});
 
 			// 2. Store the JWT (Cookie)
-			cookies.set('access_token', res.access_token, '/', 7);
-			cookies.set('refresh_token', res.refresh_token, '/', 35);
+			await cookies.set('access_token', res.access_token, '/', 7);
+			await cookies.set('refresh_token', res.refresh_token, '/', 35);
 
 			log('moving to /');
 			await goto('/');

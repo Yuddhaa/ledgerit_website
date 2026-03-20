@@ -18,7 +18,6 @@
 	let activePlan: string | null = $derived(
 		plans.current_plan?.status === 'active' ? plans.current_plan?.base_plan : null
 	);
-
 	let role = $derived(businessStore.selected?.role);
 
 	// --- State ---
@@ -627,7 +626,7 @@
 			<!-- ****************************************************************************************************** -->
 			<!-- if plan is owner lock the plans section with a toast -->
 			<!-- ****************************************************************************************************** -->
-			{#if activePlan === 'owner' && role === 'admin'}
+			{#if activePlan === 'owner'}
 				<div
 					class="absolute inset-x-0 -inset-y-5 z-10 mt-4 flex items-start justify-center rounded-4xl bg-background/40 backdrop-blur-sm transition-all duration-500 md:mt-0 md:items-center"
 				>
@@ -661,7 +660,7 @@
 			{/if}
 			{#if role !== 'creator'}
 				<div
-					class="absolute inset-x-0 -inset-y-5 z-10 mt-4 flex items-start justify-center rounded-4xl bg-background/40 backdrop-blur-sm transition-all duration-500 md:mt-0 md:items-center"
+					class="absolute inset-x-0 -inset-y-5 z-11 mt-4 flex items-start justify-center rounded-4xl bg-background/40 backdrop-blur-sm transition-all duration-500 md:mt-0 md:items-center"
 				>
 					<div
 						class="mx-4 max-w-md rounded-3xl border-2 border-primary bg-surface p-8 text-center shadow-2xl"

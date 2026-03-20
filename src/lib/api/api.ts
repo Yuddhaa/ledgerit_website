@@ -64,7 +64,7 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
     log(`\n${options.method} ${path} started\n`)
 
     // get access token
-    const token = browser ? await cookies.get("access_token") : null
+    const token = await cookies.get("access_token");
 
     // set headers
     const headers = new Headers(options.headers ?? {})
@@ -133,7 +133,7 @@ async function api<T>(path: string, options: RequestInit = {}, customFetch?: typ
 * */
 async function handleRefresh(): Promise<boolean> {
     log("handleRefresh is called")
-    const refreshToken = browser ? await cookies.get("refresh_token") : null;
+    const refreshToken = await cookies.get("refresh_token");
     if (!refreshToken) {
         redirectToLogin()
         return false

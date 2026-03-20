@@ -7,6 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"build:mobile": "IS_CAPACITOR=true vite build && npx cap copy",
+		"deploy": "npm run build:mobile && rsync -avz --delete build/ root@139.59.71.170:/var/www/ledgerit/",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
