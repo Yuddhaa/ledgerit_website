@@ -6,7 +6,6 @@
  */
 import cookies from "$lib/utils/cookies";
 import { redirect } from "@sveltejs/kit";
-import api from "$lib/api/api";
 import { auth } from "$lib/stores/store.svelte";
 import type { LayoutLoad } from "./$types";
 import type { user } from "$lib/utils/types";

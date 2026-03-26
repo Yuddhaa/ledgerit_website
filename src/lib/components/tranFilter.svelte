@@ -1,22 +1,6 @@
-<script context="module">
-	export function clickOutside(node: HTMLElement, callback: () => void) {
-		const handleClick = (event: MouseEvent) => {
-			if (node && !node.contains(event.target as Node) && !event.defaultPrevented) {
-				callback();
-			}
-		};
-		document.addEventListener('click', handleClick, true);
-		return {
-			destroy() {
-				document.removeEventListener('click', handleClick, true);
-			}
-		};
-	}
-</script>
-
 <script lang="ts">
-	import { X, Check, RotateCcw, User, Tag, Users, ChevronDown, Search } from 'lucide-svelte';
-	import { slide, fly } from 'svelte/transition';
+	import { Check, RotateCcw, ChevronDown, Search, Calendar, ArrowUpDown, X } from 'lucide-svelte';
+	import { slide, fade, fly } from 'svelte/transition';
 	import {
 		partiesStore,
 		categoryStore,
@@ -34,215 +18,336 @@
 
 	let { initialFilters, onApply, onReset }: Props = $props();
 
-	type MultiSelectKeys = 'user_id' | 'category_id' | 'party_id' | 'mode';
+	type ArrayFilterKeys = 'user_id' | 'category_id' | 'party_id' | 'mode';
 
 	let filters = $state({
 		...initialFilters,
 		user_id: initialFilters.user_id || [],
 		category_id: initialFilters.category_id || [],
 		party_id: initialFilters.party_id || [],
-		mode: (initialFilters.mode || []) as ('cash' | 'online' | 'cheque')[]
+		mode: (initialFilters.mode || []) as ('cash' | 'online' | 'cheque')[],
+		dateRange: 'all' as 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'custom'
+	});
+	// Add this below your filters $state declaration
+	$effect(() => {
+		// This runs whenever initialFilters changes (like on Reset)
+		filters.user_id = initialFilters.user_id || [];
+		filters.category_id = initialFilters.category_id || [];
+		filters.party_id = initialFilters.party_id || [];
+		filters.mode = (initialFilters.mode || []) as ('cash' | 'online' | 'cheque')[];
+		filters.direction = initialFilters.direction || '';
+		filters.from = initialFilters.from || '';
+		filters.to = initialFilters.to || '';
+		filters.sortBy = initialFilters.sortBy || 'created_at';
+		filters.order = initialFilters.order || 'desc';
+
+		// Reset the dateRange helper too
+		if (!initialFilters.from && !initialFilters.to) {
+			filters.dateRange = 'all';
+		}
 	});
 
-	interface DropdownConfig {
-		id: 'parties' | 'categories' | 'users';
-		label: string;
-		icon: any;
-		store: any[];
-		key: 'party_id' | 'category_id' | 'user_id';
-	}
-
-	let activeDropdown = $state<'parties' | 'categories' | 'users' | null>(null);
+	let activeDropdown = $state<string | null>(null);
 	let searchQuery = $state('');
 
 	let canClear = $derived(isClrearFilterActive('tran'));
 	let canApply = $derived(isApplyFilterActive('tran', filters));
 
-	// Search logic
-	const filteredParties = $derived(
-		partiesStore.parties.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-	);
-	const filteredCategories = $derived(
-		categoryStore.categories.filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
-	);
-	const filteredUsers = $derived(
-		(memberStore.members || []).filter((m) =>
-			m.name.toLowerCase().includes(searchQuery.toLowerCase())
-		)
-	);
+	const dateOptions = [
+		{ id: 'all', label: 'All Time' },
+		{ id: 'today', label: 'Today' },
+		{ id: 'yesterday', label: 'Yesterday' },
+		{ id: 'week', label: 'This Week' },
+		{ id: 'month', label: 'This Month' },
+		{ id: 'year', label: 'This Year' },
+		{ id: 'custom', label: 'Custom Range' }
+	];
 
-	const dropdowns: DropdownConfig[] = $derived([
-		{ id: 'parties', label: 'Parties', icon: User, store: filteredParties, key: 'party_id' },
-		{
-			id: 'categories',
-			label: 'Categories',
-			icon: Tag,
-			store: filteredCategories,
-			key: 'category_id'
-		},
-		{ id: 'users', label: 'Team', icon: Users, store: filteredUsers, key: 'user_id' }
-	]);
+	const sortOptions = [
+		{ label: 'Newest First', key: 'created_at' as const, order: 'desc' as const },
+		{ label: 'Oldest First', key: 'created_at' as const, order: 'asc' as const },
+		{ label: 'Highest Amount', key: 'amount' as const, order: 'desc' as const },
+		{ label: 'Lowest Amount', key: 'amount' as const, order: 'asc' as const }
+	];
 
-	function toggleArrayFilter(key: MultiSelectKeys, value: any) {
-		const target = (filters[key] || []) as any[];
+	function toggleArrayFilter(key: ArrayFilterKeys, value: string) {
+		const target = filters[key] as string[];
 		if (target.includes(value)) {
-			(filters as any)[key] = target.filter((i) => i !== value);
+			(filters[key] as string[]) = target.filter((i) => i !== value);
 		} else {
-			(filters as any)[key] = [...target, value];
+			(filters[key] as string[]) = [...target, value];
 		}
 	}
 
-	function closeDropdown() {
-		activeDropdown = null;
-		searchQuery = '';
+	function handleDatePreset(preset: typeof filters.dateRange) {
+		filters.dateRange = preset;
+		const now = new Date();
+		const formatDate = (d: Date) => d.toISOString().split('T')[0];
+		if (preset === 'today') {
+			filters.from = formatDate(now);
+			filters.to = formatDate(now);
+		} else if (preset === 'yesterday') {
+			const d = new Date(now);
+			d.setDate(d.getDate() - 1);
+			filters.from = formatDate(d);
+			filters.to = formatDate(d);
+		} else if (preset === 'week') {
+			const d = new Date(now);
+			d.setDate(d.getDate() - 7);
+			filters.from = formatDate(d);
+			filters.to = formatDate(now);
+		} else if (preset === 'month') {
+			filters.from = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+			filters.to = formatDate(now);
+		} else if (preset === 'year') {
+			filters.from = formatDate(new Date(now.getFullYear(), 0, 1));
+			filters.to = formatDate(now);
+		}
+		if (preset !== 'custom') activeDropdown = null;
 	}
 
-	// Helper to separate selected items from unselected for better UX
 	function getSortedItems(items: any[], selectedIds: string[]) {
-		const selected = items.filter((item) => selectedIds.includes(item.id));
-		const unselected = items.filter((item) => !selectedIds.includes(item.id));
-		return { selected, unselected };
+		return {
+			selected: items.filter((i) => selectedIds.includes(i.id)),
+			unselected: items.filter((i) => !selectedIds.includes(i.id))
+		};
 	}
 </script>
 
+{#if activeDropdown}
+	<div
+		transition:fade={{ duration: 150 }}
+		onclick={() => {
+			activeDropdown = null;
+			searchQuery = '';
+		}}
+		class="fixed inset-0 z-[90] bg-black/20 backdrop-blur-[1px]"
+		aria-hidden="true"
+	></div>
+{/if}
+
 <div
 	transition:slide
-	class="mb-6 space-y-6 rounded-3xl border border-outline-variant bg-surface p-6 shadow-xl"
+	class="mb-6 rounded-[2rem] border border-outline-variant/50 bg-surface/50 p-2 shadow-sm"
 >
-	<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-		<div class="space-y-2">
-			<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">Direction</label>
-			<div class="flex gap-2">
-				{#each [{ v: '', l: 'All' }, { v: 'in', l: 'In' }, { v: 'out', l: 'Out' }] as opt}
-					<button
-						onclick={() => (filters.direction = opt.v as any)}
-						class="flex-1 rounded-xl py-3 text-[10px] font-bold uppercase ring-1 transition-all hover:cursor-pointer
-						{filters.direction === opt.v
-							? 'bg-primary text-background ring-primary'
-							: 'bg-background text-text-secondary ring-outline-variant'}"
+	<div class="space-y-3 p-2">
+		<div
+			class="no-scrollbar flex gap-2 pb-1 md:flex-wrap {activeDropdown
+				? 'overflow-visible'
+				: 'overflow-x-auto'}"
+		>
+			<div class="relative">
+				<button
+					onclick={() => (activeDropdown = activeDropdown === 'dir' ? null : 'dir')}
+					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
+                    {filters.direction
+						? 'bg-primary text-background'
+						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'dir'
+						? 'relative z-[100] ring-2 ring-primary/20'
+						: ''}"
+				>
+					{filters.direction || 'Direction'}
+					<ChevronDown
+						size={12}
+						class="transition-transform duration-200 {activeDropdown === 'dir' ? 'rotate-180' : ''}"
+					/>
+				</button>
+				{#if activeDropdown === 'dir'}
+					<div
+						transition:fly={{ y: 5, duration: 150 }}
+						class="absolute top-full left-0 z-[100] mt-2 w-32 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
 					>
-						{opt.l}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<div class="space-y-2">
-			<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">Payment Modes</label>
-			<div class="flex flex-wrap gap-2">
-				{#each ['cash', 'online', 'cheque'] as const as m}
-					<button
-						onclick={() => toggleArrayFilter('mode', m)}
-						class="group flex items-center gap-2 rounded-full px-4 py-2 text-[10px] font-bold uppercase ring-1 transition-all hover:cursor-pointer
-						{filters.mode.includes(m)
-							? 'bg-primary text-background ring-primary'
-							: 'bg-background text-text-secondary ring-outline-variant'}"
-					>
-						{m}
-						{#if filters.mode.includes(m)}<X size={12} strokeWidth={3} />{/if}
-					</button>
-				{/each}
-			</div>
-		</div>
-
-		<div class="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-3">
-			{#each dropdowns as dropdown}
-				{@const sorted = getSortedItems(dropdown.store, filters[dropdown.key] as string[])}
-				<div class="relative">
-					<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">
-						{dropdown.label}
-						{filters[dropdown.key].length ? `(${filters[dropdown.key].length})` : ''}
-					</label>
-					<button
-						onclick={() => (activeDropdown = activeDropdown === dropdown.id ? null : dropdown.id)}
-						class="mt-1 flex w-full items-center justify-between rounded-xl bg-background p-3 text-xs font-bold ring-1 ring-outline-variant transition-all hover:ring-primary/50"
-					>
-						<div class="flex items-center gap-2 truncate">
-							<dropdown.icon size={14} class="text-text-secondary" />
-							<span class="truncate"
-								>{filters[dropdown.key].length
-									? `${filters[dropdown.key].length} Selected`
-									: `Select ${dropdown.label}`}</span
+						{#each [{ v: '', l: 'All' }, { v: 'in', l: 'In' }, { v: 'out', l: 'Out' }] as opt}
+							<button
+								onclick={() => {
+									filters.direction = opt.v as any;
+									activeDropdown = null;
+								}}
+								class="w-full rounded-xl p-2 text-left text-[10px] font-bold uppercase hover:bg-primary/5 {filters.direction ===
+								opt.v
+									? 'text-primary'
+									: ''}"
 							>
-						</div>
-						<ChevronDown
-							size={14}
-							class="transition-transform {activeDropdown === dropdown.id ? 'rotate-180' : ''}"
-						/>
-					</button>
+								{opt.l}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
 
-					{#if activeDropdown === dropdown.id}
-						<div
-							use:clickOutside={closeDropdown}
-							transition:fly={{ y: 10, duration: 200 }}
-							class="absolute right-0 left-0 z-[100] mt-2 flex max-h-80 flex-col overflow-hidden rounded-2xl border border-outline-variant bg-surface shadow-2xl"
-						>
-							<div
-								class="flex items-center justify-between border-b border-outline-variant bg-surface-high/50 px-4 py-2"
+			<div class="relative">
+				<button
+					onclick={() => (activeDropdown = activeDropdown === 'date' ? null : 'date')}
+					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
+                    {filters.dateRange !== 'all'
+						? 'bg-primary text-background'
+						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'date'
+						? 'relative z-[100] ring-2 ring-primary/20'
+						: ''}"
+				>
+					<Calendar size={12} />
+					{dateOptions.find((o) => o.id === filters.dateRange)?.label}
+					<ChevronDown size={12} class={activeDropdown === 'date' ? 'rotate-180' : ''} />
+				</button>
+				{#if activeDropdown === 'date'}
+					<div
+						transition:fly={{ y: 5, duration: 150 }}
+						class="absolute top-full left-0 z-[100] mt-2 w-48 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+					>
+						{#each dateOptions as opt}
+							<button
+								onclick={() => handleDatePreset(opt.id as any)}
+								class="w-full rounded-xl p-2 text-left text-[10px] font-bold uppercase hover:bg-primary/5 {filters.dateRange ===
+								opt.id
+									? 'text-primary'
+									: ''}">{opt.label}</button
 							>
-								<span class="text-[10px] font-black text-text-secondary uppercase"
-									>Choose {dropdown.label}</span
-								>
-								<button
-									onclick={closeDropdown}
-									class="text-text-secondary transition-colors hover:text-error"
-								>
-									<X size={16} />
-								</button>
-							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
 
-							<div class="border-b border-outline-variant bg-surface-high p-2">
-								<div class="relative">
-									<Search
-										size={14}
-										class="absolute top-1/2 left-3 -translate-y-1/2 text-text-secondary"
-									/>
-									<input
-										bind:value={searchQuery}
-										placeholder="Search..."
-										class="w-full rounded-lg bg-background py-2 pr-9 pl-9 text-xs font-bold ring-1 ring-outline-variant outline-none focus:ring-primary"
-									/>
-									{#if searchQuery}
-										<button
-											onclick={() => (searchQuery = '')}
-											class="absolute top-1/2 right-3 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-										>
-											<X size={14} />
-										</button>
-									{/if}
+			<div class="relative">
+				<button
+					onclick={() => (activeDropdown = activeDropdown === 'mode' ? null : 'mode')}
+					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
+                    {filters.mode.length
+						? 'bg-primary text-background'
+						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'mode'
+						? 'relative z-[100] ring-2 ring-primary/20'
+						: ''}"
+				>
+					Mode {filters.mode.length ? `(${filters.mode.length})` : ''}
+					<ChevronDown size={12} class={activeDropdown === 'mode' ? 'rotate-180' : ''} />
+				</button>
+				{#if activeDropdown === 'mode'}
+					<div
+						transition:fly={{ y: 5, duration: 150 }}
+						class="absolute top-full left-0 z-[100] mt-2 w-40 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+					>
+						{#each ['cash', 'online', 'cheque'] as m}
+							<button
+								onclick={() => toggleArrayFilter('mode', m)}
+								class="flex w-full items-center gap-3 rounded-xl p-2 text-left text-[10px] font-bold uppercase hover:bg-primary/5"
+							>
+								<div
+									class="flex h-4 w-4 items-center justify-center rounded border border-outline-variant {filters.mode.includes(
+										m as any
+									)
+										? 'border-primary bg-primary'
+										: ''}"
+								>
+									{#if filters.mode.includes(m as any)}<Check
+											size={10}
+											class="text-background"
+											strokeWidth={4}
+										/>{/if}
 								</div>
+								{m}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<div class="relative">
+				<button
+					onclick={() => (activeDropdown = activeDropdown === 'sort' ? null : 'sort')}
+					class="flex items-center gap-2 rounded-2xl bg-background px-4 py-2 text-[10px] font-black whitespace-nowrap text-text-secondary uppercase transition-all hover:bg-surface-high {activeDropdown ===
+					'sort'
+						? 'relative z-[100] ring-2 ring-primary/20'
+						: ''}"
+				>
+					<ArrowUpDown size={12} />
+					Sort
+					<ChevronDown size={12} class={activeDropdown === 'sort' ? 'rotate-180' : ''} />
+				</button>
+				{#if activeDropdown === 'sort'}
+					<div
+						transition:fly={{ y: 5, duration: 150 }}
+						class="absolute top-full left-0 z-[100] mt-2 w-48 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+					>
+						{#each sortOptions as opt}
+							<button
+								onclick={() => {
+									filters.sortBy = opt.key;
+									filters.order = opt.order;
+									activeDropdown = null;
+								}}
+								class="w-full rounded-xl p-2 text-left text-[10px] font-bold uppercase hover:bg-primary/5 {filters.sortBy ===
+									opt.key && filters.order === opt.order
+									? 'text-primary'
+									: ''}">{opt.label}</button
+							>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			{#each [{ id: 'parties', label: 'Parties', key: 'party_id', store: partiesStore.parties }, { id: 'categories', label: 'Categories', key: 'category_id', store: categoryStore.categories }, { id: 'team', label: 'Members', key: 'user_id', store: memberStore.members || [] }] as entity}
+				{@const sorted = getSortedItems(
+					entity.store,
+					filters[entity.key as ArrayFilterKeys] as string[]
+				)}
+				<div class="relative">
+					<button
+						onclick={() => (activeDropdown = activeDropdown === entity.id ? null : entity.id)}
+						class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
+                        {filters[entity.key as ArrayFilterKeys].length
+							? 'bg-primary text-background'
+							: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown ===
+						entity.id
+							? 'relative z-[100] ring-2 ring-primary/20'
+							: ''}"
+					>
+						{entity.label}
+						{filters[entity.key as ArrayFilterKeys].length
+							? `(${filters[entity.key as ArrayFilterKeys].length})`
+							: ''}
+						<ChevronDown size={12} class={activeDropdown === entity.id ? 'rotate-180' : ''} />
+					</button>
+					{#if activeDropdown === entity.id}
+						<div
+							transition:fly={{ y: 5, duration: 150 }}
+							class="absolute top-full left-0 z-[100] mt-2 w-64 rounded-2xl border border-outline-variant bg-surface p-2 shadow-2xl"
+						>
+							<div class="relative mb-2">
+								<Search
+									size={12}
+									class="absolute top-1/2 left-2 -translate-y-1/2 text-text-secondary"
+								/>
+								<input
+									bind:value={searchQuery}
+									placeholder="Search..."
+									class="w-full rounded-lg bg-background py-2 pr-2 pl-8 text-[10px] font-bold uppercase ring-1 ring-outline-variant outline-none focus:ring-primary"
+								/>
 							</div>
-
-							<div class="flex-1 overflow-y-auto p-1">
-								{#if sorted.selected.length > 0}
-									<div class="mb-2 space-y-1 border-b border-outline-variant/30 pb-2">
-										{#each sorted.selected as item}
-											<button
-												onclick={() => toggleArrayFilter(dropdown.key, item.id)}
-												class="flex w-full items-center justify-between rounded-lg bg-primary/5 px-3 py-2 text-left text-xs font-bold text-primary transition-colors hover:bg-primary/10"
-											>
-												<span class="truncate">{item.name}</span>
-												<Check size={14} />
-											</button>
-										{/each}
-									</div>
-								{/if}
-
-								{#each sorted.unselected as item}
+							<div class="max-h-60 space-y-1 overflow-y-auto">
+								{#each sorted.selected as item}
 									<button
-										onclick={() => toggleArrayFilter(dropdown.key, item.id)}
-										class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-bold transition-colors hover:bg-primary/10"
+										onclick={() => toggleArrayFilter(entity.key as ArrayFilterKeys, item.id)}
+										class="flex w-full items-center gap-3 rounded-lg bg-primary/5 p-2 text-left text-[10px] font-bold text-primary uppercase"
 									>
+										<div
+											class="flex h-4 w-4 items-center justify-center rounded border border-primary bg-primary"
+										>
+											<Check size={10} class="text-background" strokeWidth={4} />
+										</div>
 										<span class="truncate">{item.name}</span>
 									</button>
-								{:else}
-									{#if sorted.selected.length === 0}
-										<p
-											class="p-4 text-center text-[10px] font-black uppercase text-text-secondary/50"
-										>
-											No results
-										</p>
-									{/if}
+								{/each}
+								{#each sorted.unselected.filter((i) => i.name
+										.toLowerCase()
+										.includes(searchQuery.toLowerCase())) as item}
+									<button
+										onclick={() => toggleArrayFilter(entity.key as ArrayFilterKeys, item.id)}
+										class="flex w-full items-center gap-3 rounded-lg p-2 text-left text-[10px] font-bold uppercase hover:bg-primary/5"
+									>
+										<div
+											class="flex h-4 w-4 items-center justify-center rounded border border-outline-variant"
+										></div>
+										<span class="truncate text-text-secondary">{item.name}</span>
+									</button>
 								{/each}
 							</div>
 						</div>
@@ -251,68 +356,52 @@
 			{/each}
 		</div>
 
-		<div class="grid grid-cols-2 gap-3 md:col-span-2">
-			<div class="space-y-1">
-				<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">From Date</label>
-				<input
-					type="date"
-					bind:value={filters.from}
-					class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none focus:ring-2 focus:ring-primary"
-				/>
+		{#if filters.dateRange === 'custom'}
+			<div
+				transition:slide={{ duration: 200 }}
+				class="grid grid-cols-2 gap-2 border-t border-outline-variant/30 py-2"
+			>
+				<div class="space-y-1">
+					<p class="pl-1 text-[8px] font-black text-text-secondary uppercase">From</p>
+					<input
+						type="date"
+						bind:value={filters.from}
+						class="w-full rounded-xl bg-background p-2 text-[10px] font-bold uppercase ring-1 ring-outline-variant outline-none focus:ring-primary"
+					/>
+				</div>
+				<div class="space-y-1">
+					<p class="pl-1 text-[8px] font-black text-text-secondary uppercase">To</p>
+					<input
+						type="date"
+						bind:value={filters.to}
+						class="w-full rounded-xl bg-background p-2 text-[10px] font-bold uppercase ring-1 ring-outline-variant outline-none focus:ring-primary"
+					/>
+				</div>
 			</div>
-			<div class="space-y-1">
-				<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">To Date</label>
-				<input
-					type="date"
-					bind:value={filters.to}
-					class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant outline-none focus:ring-2 focus:ring-primary"
-				/>
-			</div>
-		</div>
+		{/if}
 
-		<div class="grid grid-cols-2 gap-3 md:col-span-2">
-			<div class="space-y-1">
-				<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">Sort By</label>
-				<select
-					bind:value={filters.sortBy}
-					class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant hover:cursor-pointer"
-				>
-					<option value="created_at">Date</option>
-					<option value="amount">Amount</option>
-				</select>
-			</div>
-			<div class="space-y-1">
-				<label class="ml-1 text-[10px] font-black text-text-secondary uppercase">Order</label>
-				<select
-					bind:value={filters.order}
-					class="w-full rounded-xl border-none bg-background p-3 text-sm font-bold text-text-primary ring-1 ring-outline-variant hover:cursor-pointer"
-				>
-					<option value="desc">Descending</option>
-					<option value="asc">Ascending</option>
-				</select>
-			</div>
-		</div>
-	</div>
+		<div class="flex items-center justify-between gap-4 pt-1">
+			<button
+				onclick={onReset}
+				disabled={!canClear}
+				class="group flex items-center gap-2 px-4 py-2 text-[10px] font-black text-text-secondary uppercase transition-all hover:text-text-primary disabled:opacity-30"
+			>
+				<RotateCcw size={12} class="transition-transform group-hover:-rotate-45" />
+				Reset Filters
+			</button>
 
-	<div class="flex gap-3 pt-4">
-		<button
-			onclick={onReset}
-			disabled={!canClear}
-			class="flex flex-1 items-center justify-center gap-2 rounded-2xl py-4 text-xs font-black uppercase transition-all hover:cursor-pointer active:scale-95
-			{canClear ? 'bg-surface-high text-text-primary' : 'bg-disabled text-text-disabled opacity-50'}"
-		>
-			<RotateCcw size={14} /> Reset
-		</button>
-		<button
-			onclick={() => onApply(filters)}
-			disabled={!canApply}
-			class="flex flex-[2] items-center justify-center gap-2 rounded-2xl py-4 text-xs font-black uppercase transition-all hover:cursor-pointer active:scale-95
-			{canApply
-				? 'bg-primary text-background shadow-lg shadow-primary/20'
-				: 'bg-primary/40 text-background/50'}"
-		>
-			<Check size={16} /> Apply Filters
-		</button>
+			<button
+				onclick={() => onApply(filters)}
+				disabled={!canApply}
+				class="flex items-center gap-2 rounded-2xl px-8 py-3 text-[10px] font-black uppercase transition-all active:scale-95
+                {canApply
+					? 'bg-primary text-background shadow-lg shadow-primary/25 hover:brightness-110'
+					: 'bg-surface-high text-text-disabled opacity-50'}"
+			>
+				{#if canApply}<Check size={14} strokeWidth={3} />{/if}
+				Apply
+			</button>
+		</div>
 	</div>
 </div>
 

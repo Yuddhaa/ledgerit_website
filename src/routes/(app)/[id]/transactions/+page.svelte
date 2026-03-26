@@ -10,14 +10,13 @@
 	} from '$lib/stores/store.svelte.js';
 	import { log } from '$lib/utils/helpers';
 	import type { transaction, tranStats } from '$lib/utils/types.js';
-	import TranFilter from '$lib/components/TranFilter.svelte';
 	import PaymentSuccess from '$lib/components/paymentSuccess.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import TranFilter from '$lib/components/TranFilter.svelte';
 
 	let { data } = $props();
 
 	// --- State Management ---
-	let showFilters = $state(false);
 	let manualPromise = $state<Promise<any> | null>(null);
 	let refreshing = $state(false);
 
@@ -34,7 +33,6 @@
 			};
 			return res;
 		});
-		showFilters = false;
 	}
 
 	function handleReset() {
@@ -152,41 +150,14 @@
 					<Plus size={28} strokeWidth={3} />
 				</a>
 			{/await}
-
-			<button
-				onclick={() => (showFilters = !showFilters)}
-				class="relative flex h-12 w-12 items-center justify-center rounded-2xl transition-all hover:cursor-pointer active:scale-90
-				{isClrearFilterActive('tran')
-					? 'bg-primary text-background shadow-lg shadow-primary/20'
-					: 'bg-surface-high text-text-primary'}"
-			>
-				{#if showFilters}
-					<X size={20} />
-				{:else}
-					<Filter size={20} />
-				{/if}
-
-				{#if isClrearFilterActive('tran') && !showFilters}
-					<span class="absolute -top-1 -right-1 flex h-3 w-3">
-						<span
-							class="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"
-						></span>
-						<span
-							class="relative inline-flex h-3 w-3 rounded-full border-2 border-background bg-primary"
-						></span>
-					</span>
-				{/if}
-			</button>
 		</div>
 	</header>
 
-	{#if showFilters}
-		<TranFilter
-			initialFilters={transactionStore.filter}
-			onApply={handleApplyFilters}
-			onReset={handleReset}
-		/>
-	{/if}
+	<TranFilter
+		initialFilters={transactionStore.filter}
+		onApply={handleApplyFilters}
+		onReset={handleReset}
+	/>
 
 	{#await activePromise}
 		<div class="flex flex-col items-center justify-center py-20 opacity-50">
