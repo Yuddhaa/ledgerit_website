@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Plus, RefreshCw, Trash2, Wallet, X, Filter } from 'lucide-svelte';
+	import { Plus, RefreshCw, Trash2, Wallet, X, Filter, Check } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { invalidate } from '$app/navigation';
 	import transactionsApi from '$lib/api/transactionsApi';
@@ -10,9 +10,9 @@
 	} from '$lib/stores/store.svelte.js';
 	import { log } from '$lib/utils/helpers';
 	import type { transaction, tranStats } from '$lib/utils/types.js';
-	import PaymentSuccess from '$lib/components/paymentSuccess.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import TranFilter from '$lib/components/TranFilter.svelte';
+	import TranDetail from '$lib/components/TranDetail.svelte';
 
 	let { data } = $props();
 
@@ -22,6 +22,8 @@
 
 	// Derived promise ensures UI stays in sync with either initial load or filter changes
 	let activePromise = $derived(manualPromise || data.transactionsPromise);
+
+	let selectedTran: transaction | null = $state(null);
 
 	// --- Handlers ---
 	async function handleApplyFilters(newFilters: any) {
@@ -114,6 +116,11 @@
 		});
 		return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
 	}
+
+	function handleEdit(tran: transaction) {
+		log('Editing transaction:', tran.id);
+		// Logic to open your edit form
+	}
 </script>
 
 <div class="min-h-screen bg-background p-4 pb-32 md:p-8">
@@ -202,49 +209,98 @@
 					{#each txs as tx (tx.id)}
 						<div
 							transition:fade
-							class="relative rounded-3xl border border-outline-variant bg-surface p-5 transition-colors active:bg-surface-high"
-							onclick={() => log('clicked on individaul tran')}
+							class="group relative overflow-hidden rounded-3xl border border-outline-variant bg-surface p-4 transition-all hover:border-primary/30 active:scale-[0.98] active:bg-surface-high"
+							onclick={() => (selectedTran = tx)}
 						>
-							<div class="flex items-start justify-between">
-								<div class="space-y-1">
-									<h4 class="text-lg font-black text-text-primary">
-										{tx.party_name || 'Walking Party'}
-									</h4>
+							<div
+								class="absolute top-0 left-0 h-full w-1.5 {tx.direction === 'in'
+									? 'bg-success/40'
+									: 'bg-error/40'}"
+							></div>
+
+							<div class="flex items-center justify-between gap-4">
+								<div class="flex items-center gap-4">
 									<div
-										class="flex items-center gap-2 text-[10px] font-bold text-text-secondary uppercase"
+										class="flex h-12 w-12 items-center justify-center rounded-2xl bg-background text-text-secondary ring-1 ring-outline-variant/50"
 									>
-										<span>{tx.mode}</span>
-										<span class="h-1 w-1 rounded-full bg-outline-variant"></span>
-										<span>{formatTime(tx.created_at)}</span>
+										{#if tx.mode === 'cash'}
+											<Wallet size={20} />
+										{:else if tx.mode === 'online'}
+											<RefreshCw size={20} />
+										{:else}
+											<Check size={20} />
+										{/if}
+									</div>
+
+									<div class="space-y-0.5">
+										<div class="flex items-center gap-2">
+											<h4 class="max-w-[150px] truncate text-base font-black text-text-primary">
+												{tx.party_name || 'Walking Party'}
+											</h4>
+											{#if tx.category_name}
+												<span
+													class="rounded-lg bg-surface-high px-2 py-0.5 text-[8px] font-black tracking-tighter text-text-secondary uppercase ring-1 ring-outline-variant/30"
+												>
+													{tx.category_name}
+												</span>
+											{/if}
+										</div>
+										<div
+											class="flex items-center gap-2 text-[9px] font-bold tracking-tight text-text-secondary uppercase"
+										>
+											<span class="text-primary">{tx.mode}</span>
+											<span class="h-1 w-1 rounded-full bg-outline-variant"></span>
+											<span>{formatTime(tx.created_at)}</span>
+											{#if tx.receipt_no}
+												<span class="h-1 w-1 rounded-full bg-outline-variant"></span>
+												<span class="text-text-primary/60">#{tx.receipt_no}</span>
+											{/if}
+										</div>
 									</div>
 								</div>
-								<div class="text-right font-black">
-									<p class="text-xl {tx.direction === 'in' ? 'text-success' : 'text-error'}">
+
+								<div class="flex flex-col items-end gap-1">
+									<p
+										class="text-lg font-black tracking-tight {tx.direction === 'in'
+											? 'text-success'
+											: 'text-error'}"
+									>
 										{tx.direction === 'in' ? '+' : '-'}
 										{formatCurrency(tx.amount)}
 									</p>
+
+									{#if businessStore.selected?.role !== 'employee'}
+										<button
+											onclick={(e) => {
+												e.stopPropagation();
+												warnMsg =
+													'Are you sure you want to delete this transaction, its irreversible.';
+												warnOnConfirm = async () => {
+													warnMsg = '';
+													await handleDelete(tx.id);
+												};
+											}}
+											class="rounded-lg p-1 text-text-secondary/20 transition-colors hover:bg-error/10 hover:text-error"
+										>
+											<Trash2 size={14} />
+										</button>
+									{/if}
 								</div>
 							</div>
+
+							{#if tx.description}
+								<p
+									class="mt-3 line-clamp-1 border-t border-outline-variant/20 pt-3 text-[10px] font-medium text-text-secondary italic"
+								>
+									"{tx.description}"
+								</p>
+							{/if}
+
 							<div
-								class="mt-4 flex items-center justify-between border-t border-outline-variant/30 pt-4 text-[10px] font-bold text-text-secondary"
+								class="mt-3 flex items-center justify-between text-[8px] font-black tracking-widest text-text-secondary/50 uppercase"
 							>
-								<span>Entry by: <span class="text-text-primary">{tx.user_name}</span></span>
-								{#if businessStore.selected?.role !== 'employee'}
-									<button
-										onclick={(e) => {
-											e.stopPropagation();
-											warnMsg =
-												'Are you sure you want to delete this transaction, its irreversible.';
-											warnOnConfirm = async () => {
-												warnMsg = '';
-												await handleDelete(tx.id);
-											};
-										}}
-										class="text-error/40 transition-colors hover:cursor-pointer hover:text-error"
-									>
-										<Trash2 size={16} />
-									</button>
-								{/if}
+								<span>Record ID: {tx.id.slice(0, 8)}...</span>
+								<span>By {tx.user_name}</span>
 							</div>
 						</div>
 					{/each}
@@ -279,5 +335,15 @@
 			warnMsg = '';
 		}}
 		onConfirm={warnOnConfirm}
+	/>
+{/if}
+
+{#if selectedTran}
+	<TranDetail
+		tran={selectedTran}
+		onClose={() => {
+			selectedTran = null;
+		}}
+		onEdit={handleEdit}
 	/>
 {/if}

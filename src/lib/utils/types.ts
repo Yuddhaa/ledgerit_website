@@ -82,6 +82,17 @@ export interface transaction {
     user_name: string
 }
 
+export interface minTran {
+    amount: string
+    direction: "in" | "out"
+    category_id: string
+    party_id: string
+    mode: "online" | "cash" | "cheque"
+    receipt_no: string
+    description: string
+}
+
+
 export type approvalType = "edit" | "delete"
 export type approvalStatus = "pending" | "approved" | "rejected"
 export interface transactionChange {

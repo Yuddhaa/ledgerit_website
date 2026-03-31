@@ -1,6 +1,6 @@
 import api from "$lib/api/api";
 import { log } from "$lib/utils/helpers";
-import type { approval, approvalStatus, approvalType, transaction, tranStats } from "$lib/utils/types";
+import type { approval, approvalStatus, approvalType, minTran, transaction, tranStats } from "$lib/utils/types";
 
 export default {
     /**
@@ -84,18 +84,12 @@ export default {
     create: (businessId: string, params: minTran, customFetch?: typeof fetch) =>
         api.Post<{}>(`/business/${businessId}/transactions`, params, customFetch),
 
+    update: (businessId: string, tranId: string, params: minTran & { reason: string }, customFetch?: typeof fetch) =>
+        api.Patch<({ requestId: string } | { transactions: object })>(`/business/${businessId}/transactions/${tranId}`, params, customFetch),
+
+
     delete: (businessId: string, tranId: string, customFetch?: typeof fetch) =>
         api.Delete(`/business/${businessId}/transactions/${tranId}`, null, customFetch),
-}
-
-export interface minTran {
-    amount: string
-    direction: "in" | "out"
-    category_id: string
-    party_id: string
-    mode: "online" | "cash" | "cheque"
-    receipt_no: string
-    description: string
 }
 
 export interface approvalTran {

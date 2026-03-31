@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { ArrowLeft, Check, IndianRupee, Tag, User, Receipt, FileText, Plus } from 'lucide-svelte';
-	import { fade, slide, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
-	import transactionsApi, { type minTran } from '$lib/api/transactionsApi';
+	import transactionsApi from '$lib/api/transactionsApi';
 	import Toast from '$lib/components/Toast.svelte';
 	import { categoryStore, partiesStore, transactionStore } from '$lib/stores/store.svelte';
 	import PartyCatManagement from '$lib/components/PartyCatManagement.svelte';
+	import type { minTran } from '$lib/utils/types.js';
 
 	let { data } = $props();
 
