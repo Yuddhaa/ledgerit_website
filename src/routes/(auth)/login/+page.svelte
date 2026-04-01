@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import cookies from '$lib/utils/cookies';
 	import api from '$lib/api/api';
-	import { PUBLIC_GOOGLE_WEB_CLIENT_ID } from '$env/static/public';
+	import { PUBLIC_GOOGLE_WEB_CLIENT_ID, PUBLIC_REDIRECT_URL } from '$env/static/public';
 	import Toast from '$lib/components/Toast.svelte';
 	import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 
@@ -68,7 +68,7 @@
 		try {
 			await GoogleSignIn.initialize({
 				clientId: PUBLIC_GOOGLE_WEB_CLIENT_ID,
-				redirectUrl: 'http://localhost:5173/login/'
+				redirectUrl: PUBLIC_REDIRECT_URL
 			});
 			log('signin initialized');
 
@@ -109,6 +109,10 @@
 		/>
 		Sign in with Google
 	</button>
+
+	{#if Capacitor.getPlatform() === 'web'}
+		<a href="/test_login">Test Login</a>
+	{/if}
 </div>
 
 {#if isLoggingIn}
