@@ -3,6 +3,8 @@ import { log } from "$lib/utils/helpers";
 import type { approval, approvalStatus, approvalType, minTran, transaction, tranStats } from "$lib/utils/types";
 
 export default {
+    listone: (businessId: string, tranId: string, customFetch?: typeof fetch) =>
+        api.Get<{ transaction: transaction }>(`/business/${businessId}/transactions/${tranId}`, customFetch),
     /**
      * listAll fetches transactions for a business with optional filtering
      */

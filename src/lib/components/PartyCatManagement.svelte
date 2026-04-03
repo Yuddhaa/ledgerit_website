@@ -11,16 +11,14 @@
 		Check,
 		Phone
 	} from 'lucide-svelte';
-	import { fade, slide, fly, scale } from 'svelte/transition';
+	import { fade, slide, fly } from 'svelte/transition';
 	import Fuse from 'fuse.js';
-	import { log } from '$lib/utils/helpers';
 	import { businessStore, categoryStore, partiesStore } from '$lib/stores/store.svelte';
 	import Toast from './Toast.svelte';
 	import partiesApi from '$lib/api/partiesApi';
 	import type { category, party } from '$lib/utils/types';
 	import categoriesApi from '$lib/api/categoriesApi';
-	import { onMount } from 'svelte';
-	import { Capacitor } from '@capacitor/core';
+	import { invalidate } from '$app/navigation';
 
 	interface Props {
 		type: 'parties' | 'categories';
@@ -45,17 +43,11 @@
 	let actionLoading = $state(false);
 	let editingId = $state<string | null>(null);
 
-	// Confirmation states for Toast
 	let showDeleteConfirm = $state<string | null>(null);
 	let errMsg = $state('');
 	let successMsg = $state('');
 
 	let selectedPlaces = $state<string[]>([]);
-	onMount(() => {
-		if (Capacitor.getPlatform() == 'web') {
-		} else {
-		}
-	});
 
 	let form = $state({ name: '', place: '', phone_number: '' });
 
@@ -111,7 +103,6 @@
 	// --- Handlers ---
 
 	async function handleAdd() {
-		if (!form.name.trim()) return;
 		actionLoading = true;
 		try {
 			if (type === 'parties') {
@@ -124,6 +115,7 @@
 				const res = await categoriesApi.create(businessId, { name: form.name });
 				categoryStore.categories = [...categoryStore.categories, res.category];
 			}
+			await invalidate('layout:transactions');
 			isAdding = false;
 			resetForm();
 			successMsg = `${type === 'parties' ? 'Party' : 'Category'} added!`;
@@ -134,25 +126,24 @@
 		}
 	}
 
-	async function handleUpdate(item: any) {
-		if (!form.name.trim()) {
-			editingId = null;
-			resetForm();
-			return;
-		}
+	async function handleUpdate(id: string) {
 		actionLoading = true;
 		try {
 			if (type === 'parties') {
-				const res = await partiesApi.update(businessId, item.id, form);
-				partiesStore.parties = partiesStore.parties.map((p) => (p.id === item.id ? res.party : p));
+				const res = await partiesApi.update(businessId, id, form);
+				partiesStore.parties = partiesStore.parties.map((p) => (p.id === id ? res.party : p));
+				const places = await partiesApi.listPlaces(businessId);
+				partiesStore.places = places.places;
 			} else {
-				const res = await categoriesApi.update(businessId, item.id, { name: form.name });
+				const res = await categoriesApi.update(businessId, id, { name: form.name });
 				categoryStore.categories = categoryStore.categories.map((c) =>
-					c.id === item.id ? res.category : c
+					c.id === id ? res.category : c
 				);
 			}
 			editingId = null;
+			await invalidate('layout:transactions');
 			resetForm();
+			successMsg = 'Updated successfully';
 		} catch (err: any) {
 			errMsg = err.message;
 		} finally {
@@ -175,6 +166,7 @@
 				await categoriesApi.delete(businessId, id);
 				categoryStore.categories = categoryStore.categories.filter((c) => c.id !== id);
 			}
+			await invalidate('layout:transactions');
 		} catch (err: any) {
 			errMsg = err.message;
 		} finally {
@@ -216,10 +208,7 @@
 					</p>
 				</div>
 			</div>
-			<button
-				onclick={close}
-				class="text-text-secondary transition-colors hover:cursor-pointer hover:text-error"
-			>
+			<button onclick={close} class="text-text-secondary transition-colors hover:text-error">
 				<X size={24} />
 			</button>
 		</header>
@@ -272,40 +261,50 @@
 
 		<div class="relative flex-1 space-y-3 overflow-y-auto p-6">
 			{#each filteredItems as item (item.id)}
-				{@const p = item as party}
 				<div
-					onclick={() => onSelect?.(item.id)}
 					transition:slide
 					class="rounded-3xl border border-outline-variant/50 bg-background/30 p-4 transition-all hover:border-primary/30"
 				>
 					{#if editingId === item.id}
-						<div class="space-y-3" in:fade>
+						<form
+							onsubmit={(e) => {
+								e.preventDefault();
+								handleUpdate(item.id);
+							}}
+							class="space-y-3"
+							in:fade
+						>
 							<div class="grid grid-cols-1 gap-2 md:grid-cols-2">
 								<div class="space-y-1 {type === 'categories' ? 'md:col-span-2' : ''}">
-									<label class="ml-1 text-[8px] font-black text-text-secondary uppercase">
-										Name
-									</label>
+									<label class="ml-1 text-[8px] font-black text-text-secondary uppercase"
+										>Name</label
+									>
 									<input
 										bind:value={form.name}
+										required
+										placeholder="required"
 										class="w-full rounded-xl bg-surface-high p-3 text-sm font-bold ring-1 ring-primary outline-none"
 									/>
 								</div>
 								{#if type === 'parties'}
 									<div class="space-y-1">
-										<label class="ml-1 text-[8px] font-black text-text-secondary uppercase">
-											Place
-										</label>
+										<label class="ml-1 text-[8px] font-black text-text-secondary uppercase"
+											>Place</label
+										>
 										<input
 											bind:value={form.place}
+											required
+											placeholder="required"
 											class="w-full rounded-xl bg-surface-high p-3 text-sm font-bold ring-1 ring-primary outline-none"
 										/>
 									</div>
 									<div class="space-y-1 md:col-span-2">
-										<label class="ml-1 text-[8px] font-black text-text-secondary uppercase">
-											Phone
-										</label>
+										<label class="ml-1 text-[8px] font-black text-text-secondary uppercase"
+											>Phone</label
+										>
 										<input
 											bind:value={form.phone_number}
+											placeholder="optional"
 											class="w-full rounded-xl bg-surface-high p-3 text-sm font-bold ring-1 ring-primary outline-none"
 										/>
 									</div>
@@ -313,25 +312,23 @@
 							</div>
 							<div class="flex gap-2">
 								<button
+									type="button"
 									onclick={() => {
 										editingId = null;
 										resetForm();
 									}}
-									class="flex-1 rounded-lg bg-surface-high py-2 text-[10px] font-black uppercase hover:cursor-pointer"
+									class="flex-1 rounded-lg bg-surface-high py-2 text-[10px] font-black uppercase"
+									>Cancel</button
 								>
-									Cancel
-								</button>
-
 								<button
-									onclick={() => handleUpdate(item)}
-									class="flex-1 rounded-lg bg-primary py-2 text-[10px] font-black text-background uppercase hover:cursor-pointer"
+									type="submit"
+									class="flex-1 rounded-lg bg-primary py-2 text-[10px] font-black text-background uppercase"
+									>Update</button
 								>
-									Update
-								</button>
 							</div>
-						</div>
+						</form>
 					{:else}
-						<div class="flex items-center justify-between">
+						<div class="flex items-center justify-between" onclick={() => onSelect?.(item.id)}>
 							<div class="flex items-center gap-4 overflow-hidden">
 								<div
 									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-high text-xs font-black text-text-secondary"
@@ -342,45 +339,33 @@
 									<p class="truncate text-sm leading-tight font-black text-text-primary">
 										{item.name}
 									</p>
-
 									{#if type === 'parties'}
 										<div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
 											<p
 												class="flex items-center gap-1 text-[9px] font-bold text-text-secondary uppercase"
 											>
-												<MapPin size={10} />
-												{p.place}
+												<MapPin size={10} />{(item as party).place}
 											</p>
-											{#if p.phone_number}
-												<p
+											{#if (item as party).phone_number}<p
 													class="flex items-center gap-1 text-[9px] font-bold text-text-secondary uppercase"
 												>
-													<Phone size={10} />
-													{p.phone_number}
-												</p>
-											{/if}
+													<Phone size={10} />{(item as party).phone_number}
+												</p>{/if}
 										</div>
 									{/if}
 								</div>
 							</div>
-
 							{#if role !== 'employee'}
-								<div class="flex gap-1">
+								<div class="flex gap-1" onclick={(e) => e.stopPropagation()}>
 									<button
 										onclick={() => startEdit(item)}
-										class="p-2 text-text-secondary/40 transition-colors hover:text-primary"
-										aria-label="Edit"
+										class="p-2 text-text-secondary/40 hover:text-primary"
+										><Edit2 size={18} /></button
 									>
-										<Edit2 size={18} />
-									</button>
-
 									<button
 										onclick={() => (showDeleteConfirm = item.id)}
-										class="p-2 text-text-secondary/40 transition-colors hover:text-error"
-										aria-label="Delete"
+										class="p-2 text-text-secondary/40 hover:text-error"><Trash2 size={18} /></button
 									>
-										<Trash2 size={18} />
-									</button>
 								</div>
 							{/if}
 						</div>
@@ -392,15 +377,24 @@
 				</div>
 			{/each}
 		</div>
+
 		<footer class="border-t border-outline-variant/30 bg-surface-high/30 p-6">
 			{#if role !== 'employee'}
 				{#if isAdding}
-					<div transition:slide class="space-y-4 pb-4">
+					<form
+						onsubmit={(e) => {
+							e.preventDefault();
+							handleAdd();
+						}}
+						transition:slide
+						class="space-y-4 pb-4"
+					>
 						<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
 							<div class="space-y-1 {type === 'categories' ? 'md:col-span-2' : ''}">
 								<label class="ml-1 text-[9px] font-black text-text-secondary uppercase">Name</label>
 								<input
 									bind:value={form.name}
+									required
 									class="w-full rounded-xl bg-background p-3 text-sm font-bold ring-1 ring-outline-variant outline-none"
 									placeholder="Enter name"
 								/>
@@ -412,6 +406,7 @@
 									>
 									<input
 										bind:value={form.place}
+										required
 										class="w-full rounded-xl bg-background p-3 text-sm font-bold ring-1 ring-outline-variant outline-none"
 										placeholder="City"
 									/>
@@ -430,27 +425,28 @@
 						</div>
 						<div class="flex gap-2">
 							<button
+								type="button"
 								onclick={() => {
 									isAdding = false;
 									resetForm();
 								}}
-								class="flex-1 rounded-2xl bg-surface p-4 text-xs font-black text-text-secondary uppercase hover:cursor-pointer"
+								class="flex-1 rounded-2xl bg-surface p-4 text-xs font-black text-text-secondary uppercase"
 								>Cancel</button
 							>
 							<button
-								onclick={handleAdd}
-								class="flex-[2] rounded-2xl bg-primary p-4 text-xs font-black text-background uppercase hover:cursor-pointer"
+								type="submit"
+								class="flex-[2] rounded-2xl bg-primary p-4 text-xs font-black text-background uppercase"
 								>Save {type === 'parties' ? 'Party' : 'Category'}</button
 							>
 						</div>
-					</div>
+					</form>
 				{:else}
 					<button
 						onclick={() => {
 							isAdding = true;
 							resetForm();
 						}}
-						class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black text-background hover:cursor-pointer"
+						class="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-sm font-black text-background"
 					>
 						<Plus size={20} /> Add New {type}
 					</button>
@@ -467,20 +463,17 @@
 {#if actionLoading}
 	<Toast toastType="loading" text="Processing..." />
 {/if}
-
 {#if errMsg}
 	<Toast toastType="error" text={errMsg} close={() => (errMsg = '')} />
 {/if}
-
 {#if successMsg}
 	<Toast toastType="success" text={successMsg} close={() => (successMsg = '')} />
 {/if}
-
 {#if showDeleteConfirm}
 	<Toast
 		toastType="warning"
 		text="Delete this {type === 'parties' ? 'party' : 'category'} permanently? {type === 'parties'
-			? 'All transactions realted to this party will be deleted. Please be sure!!!'
+			? 'All transactions related to this party will be deleted. Please be sure!!!'
 			: ''}"
 		confirmText="Delete"
 		onConfirm={confirmDelete}

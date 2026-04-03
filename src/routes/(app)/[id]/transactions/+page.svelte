@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Plus, RefreshCw, Trash2, Wallet, X, Filter, Check } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
-	import { invalidate } from '$app/navigation';
+	import { goto, invalidate } from '$app/navigation';
 	import transactionsApi from '$lib/api/transactionsApi';
 	import {
 		transactionStore,
@@ -116,11 +116,6 @@
 		});
 		return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
 	}
-
-	function handleEdit(tran: transaction) {
-		log('Editing transaction:', tran.id);
-		// Logic to open your edit form
-	}
 </script>
 
 <div class="min-h-screen bg-background p-4 pb-32 md:p-8">
@@ -209,8 +204,11 @@
 					{#each txs as tx (tx.id)}
 						<div
 							transition:fade
-							class="group relative overflow-hidden rounded-3xl border border-outline-variant bg-surface p-4 transition-all hover:border-primary/30 active:scale-[0.98] active:bg-surface-high"
-							onclick={() => (selectedTran = tx)}
+							class="group relative overflow-hidden rounded-3xl border border-outline-variant bg-surface p-4 transition-all hover:cursor-pointer hover:border-primary/30 active:scale-[0.98] active:bg-surface-high"
+							onclick={(e: Event) => {
+								e.stopPropagation();
+								selectedTran = tx;
+							}}
 						>
 							<div
 								class="absolute top-0 left-0 h-full w-1.5 {tx.direction === 'in'
@@ -280,7 +278,7 @@
 													await handleDelete(tx.id);
 												};
 											}}
-											class="rounded-lg p-1 text-text-secondary/20 transition-colors hover:bg-error/10 hover:text-error"
+											class="rounded-lg p-1 text-text-secondary/20 transition-colors hover:cursor-pointer hover:bg-error/10 hover:text-error"
 										>
 											<Trash2 size={14} />
 										</button>
@@ -344,6 +342,5 @@
 		onClose={() => {
 			selectedTran = null;
 		}}
-		onEdit={handleEdit}
 	/>
 {/if}

@@ -28,9 +28,8 @@
 		mode: (initialFilters.mode || []) as ('cash' | 'online' | 'cheque')[],
 		dateRange: 'all' as 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'custom'
 	});
-	// Add this below your filters $state declaration
+
 	$effect(() => {
-		// This runs whenever initialFilters changes (like on Reset)
 		filters.user_id = initialFilters.user_id || [];
 		filters.category_id = initialFilters.category_id || [];
 		filters.party_id = initialFilters.party_id || [];
@@ -41,7 +40,6 @@
 		filters.sortBy = initialFilters.sortBy || 'created_at';
 		filters.order = initialFilters.order || 'desc';
 
-		// Reset the dateRange helper too
 		if (!initialFilters.from && !initialFilters.to) {
 			filters.dateRange = 'all';
 		}
@@ -112,6 +110,12 @@
 			unselected: items.filter((i) => !selectedIds.includes(i.id))
 		};
 	}
+
+	// Shared Tailwind classes for the dropdowns
+	const dropdownBase =
+		'z-[100] mt-2 rounded-2xl border border-outline-variant bg-surface shadow-2xl';
+	const adaptiveDropdown =
+		'fixed inset-x-4 top-[25%] md:absolute md:inset-auto md:top-full md:mt-2';
 </script>
 
 {#if activeDropdown}
@@ -121,7 +125,7 @@
 			activeDropdown = null;
 			searchQuery = '';
 		}}
-		class="fixed inset-0 z-[90] bg-black/20 backdrop-blur-[1px]"
+		class="fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
 		aria-hidden="true"
 	></div>
 {/if}
@@ -131,31 +135,23 @@
 	class="mb-6 rounded-[2rem] border border-outline-variant/50 bg-surface/50 p-2 shadow-sm"
 >
 	<div class="space-y-3 p-2">
-		<div
-			class="no-scrollbar flex gap-2 pb-1 md:flex-wrap {activeDropdown
-				? 'overflow-visible'
-				: 'overflow-x-auto'}"
-		>
+		<div class="no-scrollbar flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
 			<div class="relative">
 				<button
 					onclick={() => (activeDropdown = activeDropdown === 'dir' ? null : 'dir')}
 					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
-                    {filters.direction
+					{filters.direction
 						? 'bg-primary text-background'
-						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'dir'
-						? 'relative z-[100] ring-2 ring-primary/20'
-						: ''}"
+						: 'bg-background text-text-secondary hover:bg-surface-high'} 
+					{activeDropdown === 'dir' ? 'relative z-[100] ring-2 ring-primary/20' : ''}"
 				>
 					{filters.direction || 'Direction'}
-					<ChevronDown
-						size={12}
-						class="transition-transform duration-200 {activeDropdown === 'dir' ? 'rotate-180' : ''}"
-					/>
+					<ChevronDown size={12} class={activeDropdown === 'dir' ? 'rotate-180' : ''} />
 				</button>
 				{#if activeDropdown === 'dir'}
 					<div
 						transition:fly={{ y: 5, duration: 150 }}
-						class="absolute top-full left-0 z-[100] mt-2 w-32 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+						class="{dropdownBase} {adaptiveDropdown} p-1 md:left-0 md:w-32"
 					>
 						{#each [{ v: '', l: 'All' }, { v: 'in', l: 'In' }, { v: 'out', l: 'Out' }] as opt}
 							<button
@@ -179,11 +175,10 @@
 				<button
 					onclick={() => (activeDropdown = activeDropdown === 'date' ? null : 'date')}
 					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
-                    {filters.dateRange !== 'all'
+					{filters.dateRange !== 'all'
 						? 'bg-primary text-background'
-						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'date'
-						? 'relative z-[100] ring-2 ring-primary/20'
-						: ''}"
+						: 'bg-background text-text-secondary hover:bg-surface-high'} 
+					{activeDropdown === 'date' ? 'relative z-[100] ring-2 ring-primary/20' : ''}"
 				>
 					<Calendar size={12} />
 					{dateOptions.find((o) => o.id === filters.dateRange)?.label}
@@ -192,7 +187,7 @@
 				{#if activeDropdown === 'date'}
 					<div
 						transition:fly={{ y: 5, duration: 150 }}
-						class="absolute top-full left-0 z-[100] mt-2 w-48 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+						class="{dropdownBase} {adaptiveDropdown} p-1 md:left-0 md:w-48"
 					>
 						{#each dateOptions as opt}
 							<button
@@ -211,11 +206,10 @@
 				<button
 					onclick={() => (activeDropdown = activeDropdown === 'mode' ? null : 'mode')}
 					class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
-                    {filters.mode.length
+					{filters.mode.length
 						? 'bg-primary text-background'
-						: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown === 'mode'
-						? 'relative z-[100] ring-2 ring-primary/20'
-						: ''}"
+						: 'bg-background text-text-secondary hover:bg-surface-high'} 
+					{activeDropdown === 'mode' ? 'relative z-[100] ring-2 ring-primary/20' : ''}"
 				>
 					Mode {filters.mode.length ? `(${filters.mode.length})` : ''}
 					<ChevronDown size={12} class={activeDropdown === 'mode' ? 'rotate-180' : ''} />
@@ -223,7 +217,7 @@
 				{#if activeDropdown === 'mode'}
 					<div
 						transition:fly={{ y: 5, duration: 150 }}
-						class="absolute top-full left-0 z-[100] mt-2 w-40 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+						class="{dropdownBase} {adaptiveDropdown} p-1 md:left-0 md:w-40"
 					>
 						{#each ['cash', 'online', 'cheque'] as m}
 							<button
@@ -253,19 +247,16 @@
 			<div class="relative">
 				<button
 					onclick={() => (activeDropdown = activeDropdown === 'sort' ? null : 'sort')}
-					class="flex items-center gap-2 rounded-2xl bg-background px-4 py-2 text-[10px] font-black whitespace-nowrap text-text-secondary uppercase transition-all hover:bg-surface-high {activeDropdown ===
-					'sort'
-						? 'relative z-[100] ring-2 ring-primary/20'
-						: ''}"
+					class="flex items-center gap-2 rounded-2xl bg-background px-4 py-2 text-[10px] font-black whitespace-nowrap text-text-secondary uppercase transition-all hover:bg-surface-high
+					{activeDropdown === 'sort' ? 'relative z-[100] ring-2 ring-primary/20' : ''}"
 				>
-					<ArrowUpDown size={12} />
-					Sort
+					<ArrowUpDown size={12} /> Sort
 					<ChevronDown size={12} class={activeDropdown === 'sort' ? 'rotate-180' : ''} />
 				</button>
 				{#if activeDropdown === 'sort'}
 					<div
 						transition:fly={{ y: 5, duration: 150 }}
-						class="absolute top-full left-0 z-[100] mt-2 w-48 rounded-2xl border border-outline-variant bg-surface p-1 shadow-2xl"
+						class="{dropdownBase} {adaptiveDropdown} p-1 md:left-0 md:w-48"
 					>
 						{#each sortOptions as opt}
 							<button
@@ -293,12 +284,10 @@
 					<button
 						onclick={() => (activeDropdown = activeDropdown === entity.id ? null : entity.id)}
 						class="flex items-center gap-2 rounded-2xl px-4 py-2 text-[10px] font-black whitespace-nowrap uppercase transition-all
-                        {filters[entity.key as ArrayFilterKeys].length
+						{filters[entity.key as ArrayFilterKeys].length
 							? 'bg-primary text-background'
-							: 'bg-background text-text-secondary hover:bg-surface-high'} {activeDropdown ===
-						entity.id
-							? 'relative z-[100] ring-2 ring-primary/20'
-							: ''}"
+							: 'bg-background text-text-secondary hover:bg-surface-high'} 
+						{activeDropdown === entity.id ? 'relative z-[100] ring-2 ring-primary/20' : ''}"
 					>
 						{entity.label}
 						{filters[entity.key as ArrayFilterKeys].length
@@ -309,7 +298,7 @@
 					{#if activeDropdown === entity.id}
 						<div
 							transition:fly={{ y: 5, duration: 150 }}
-							class="absolute top-full left-0 z-[100] mt-2 w-64 rounded-2xl border border-outline-variant bg-surface p-2 shadow-2xl"
+							class="{dropdownBase} {adaptiveDropdown} p-2 md:right-0 md:w-64"
 						>
 							<div class="relative mb-2">
 								<Search
@@ -359,7 +348,7 @@
 		{#if filters.dateRange === 'custom'}
 			<div
 				transition:slide={{ duration: 200 }}
-				class="grid grid-cols-2 gap-2 border-t border-outline-variant/30 py-2"
+				class="grid grid-cols-2 gap-2 border-t border-outline-variant/30 pt-2"
 			>
 				<div class="space-y-1">
 					<p class="pl-1 text-[8px] font-black text-text-secondary uppercase">From</p>
@@ -386,20 +375,16 @@
 				disabled={!canClear}
 				class="group flex items-center gap-2 px-4 py-2 text-[10px] font-black text-text-secondary uppercase transition-all hover:text-text-primary disabled:opacity-30"
 			>
-				<RotateCcw size={12} class="transition-transform group-hover:-rotate-45" />
-				Reset Filters
+				<RotateCcw size={12} class="transition-transform group-hover:-rotate-45" /> Reset Filters
 			</button>
-
 			<button
 				onclick={() => onApply(filters)}
 				disabled={!canApply}
-				class="flex items-center gap-2 rounded-2xl px-8 py-3 text-[10px] font-black uppercase transition-all active:scale-95
-                {canApply
+				class="flex items-center gap-2 rounded-2xl px-8 py-3 text-[10px] font-black uppercase transition-all active:scale-95 {canApply
 					? 'bg-primary text-background shadow-lg shadow-primary/25 hover:brightness-110'
 					: 'bg-surface-high text-text-disabled opacity-50'}"
 			>
-				{#if canApply}<Check size={14} strokeWidth={3} />{/if}
-				Apply
+				{#if canApply}<Check size={14} strokeWidth={3} />{/if} Apply
 			</button>
 		</div>
 	</div>
@@ -412,5 +397,6 @@
 	.no-scrollbar {
 		-ms-overflow-style: none;
 		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
 	}
 </style>

@@ -1,18 +1,27 @@
 <script lang="ts">
-	import { X, Share2, Edit3, User, Calendar, Tag, Wallet, MessageSquare } from 'lucide-svelte';
-	import { fly, fade, slide } from 'svelte/transition';
-	import type { transaction, user } from '$lib/utils/types';
-	import { auth, businessStore } from '$lib/stores/store.svelte';
+	import {
+		X,
+		Share2,
+		Edit3,
+		User,
+		Calendar,
+		Tag,
+		Wallet,
+		MessageSquare,
+		Loader2
+	} from 'lucide-svelte';
+	import { fly, fade } from 'svelte/transition';
+	import type { transaction } from '$lib/utils/types';
+	import { businessStore } from '$lib/stores/store.svelte';
 
 	interface Props {
 		tran: transaction | null;
 		onClose: () => void;
-		onEdit: (tran: transaction) => void;
 		// onShare: (tran: transaction) => void;
 	}
 
 	// let { tran, onClose, onEdit, onShare }: Props = $props();
-	let { tran, onClose, onEdit }: Props = $props();
+	let { tran, onClose }: Props = $props();
 
 	// Role-based logic
 	const canEditDirectly = $derived(
@@ -35,6 +44,7 @@
 	import { Filesystem, Directory } from '@capacitor/filesystem';
 	import { Capacitor } from '@capacitor/core';
 	import { log } from '$lib/utils/helpers';
+	import { goto } from '$app/navigation';
 	async function handleShare(tran: transaction) {
 		try {
 			log('Starting share for:', tran.id);
@@ -76,6 +86,14 @@
 		} catch (err) {
 			log('Modern Share failed:', err);
 		}
+	}
+
+	let editLoading: boolean = $state(false);
+	async function handleEdit(tran: transaction) {
+		log('Editing transaction:', tran.id);
+		editLoading = true;
+		await goto(`./addTransaction?edit=${tran.id}`);
+		editLoading = false;
 	}
 </script>
 
@@ -148,11 +166,16 @@
 			</button>
 
 			<button
-				onclick={() => onEdit(tran)}
-				class="flex items-center justify-center gap-3 rounded-2xl bg-primary py-4 text-xs font-black text-background uppercase shadow-lg shadow-primary/20 transition-all active:scale-95"
+				onclick={() => handleEdit(tran)}
+				class="flex items-center justify-center gap-3 rounded-2xl bg-primary py-4 text-xs font-black text-background uppercase shadow-lg shadow-primary/20 transition-all hover:cursor-pointer active:scale-95"
+				disabled={editLoading ? true : false}
 			>
-				<Edit3 size={16} />
-				{editButtonText}
+				{#if editLoading}
+					<Loader2 size={16} />
+				{:else}
+					<Edit3 size={16} />
+					{editButtonText}
+				{/if}
 			</button>
 		</div>
 	</div>

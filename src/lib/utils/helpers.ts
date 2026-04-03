@@ -55,7 +55,7 @@ export function getPartyPromise(businessId: string, customFetch?: typeof fetch):
     parties: party[];
 }> {
     let partyPromise: Promise<{ parties: party[] }>
-    if (partiesStore.parties.length > 0 || partiesStore.businessId === businessId) {
+    if (partiesStore.parties.length > 0 && partiesStore.businessId === businessId) {
         partyPromise = Promise.resolve({ parties: partiesStore.parties })
     } else {
         partyPromise = partiesApi.listAll(businessId, {}, customFetch)
@@ -75,7 +75,7 @@ export function getPartyPlacesPromise(businessId: string, customFetch?: typeof f
     places: string[];
 }> {
     let placesPromise: Promise<{ places: string[] }>
-    if (partiesStore.places.length > 0 || partiesStore.businessId === businessId) {
+    if (partiesStore.places.length > 0 && partiesStore.businessId === businessId) {
         placesPromise = Promise.resolve({ places: partiesStore.places })
     } else {
         placesPromise = partiesApi.listPlaces(businessId, customFetch)
@@ -98,7 +98,7 @@ export function getCategoryPromise(businessId: string, customFetch?: typeof fetc
     categories: category[];
 }> {
     let categoryPromise: Promise<{ categories: category[] }>
-    if (categoryStore.categories.length > 0 || categoryStore.businessId === businessId) {
+    if (categoryStore.categories.length > 0 && categoryStore.businessId === businessId) {
         categoryPromise = Promise.resolve({ categories: categoryStore.categories })
     } else {
         categoryPromise = categoriesApi.listAll(businessId, customFetch)

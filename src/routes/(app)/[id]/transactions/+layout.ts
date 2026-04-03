@@ -9,7 +9,7 @@ import type { LayoutLoad, } from "./$types";
 export const load: LayoutLoad = async ({ depends, params, parent, fetch }) => {
     depends('layout:transactions')
     await parent();
-    log(`in transaction page load, started`)
+    log(`in transaction layout load, started`)
     const businessId = params.id;
 
     // 1. Check if we have cached data for THIS business
@@ -52,7 +52,7 @@ export const load: LayoutLoad = async ({ depends, params, parent, fetch }) => {
     }
 
 
-    log(`in transaction page load, ended`)
+    log(`in transaction layout load, ended`)
 
     return {
         transactionsPromise,
