@@ -11,6 +11,9 @@
 	let { children } = $props();
 	const baseRoute = $derived(`/${businessStore.selected?.id}`);
 
+	// [1] Reactive check for missing phone number
+	const needsPhone = $derived(!auth.user?.phone_number);
+
 	// Helper to check if a route is active
 	const isActive = (path: string) => {
 		const fullPath = path === '' ? baseRoute : `${baseRoute}/${path}`;
@@ -82,14 +85,22 @@
 
 			<button
 				onclick={() => (ui.showUniversalSettings = true)}
-				class="h-10 w-10 cursor-pointer overflow-hidden rounded-full border-2 border-primary/20 bg-surface-high transition-transform active:scale-90"
+				class="relative h-10 w-10 cursor-pointer rounded-full border-2 border-primary/20 bg-surface-high transition-transform active:scale-90"
 			>
-				{#if auth.user?.picture}
-					<img src={auth.user.picture} alt="Profile" class="h-full w-full object-cover" />
-				{:else}
-					<span class="flex h-full w-full items-center justify-center font-black text-primary">
-						{auth.user ? getInitials(auth.user.name) : 'U'}
-					</span>
+				<div class="h-full w-full overflow-hidden rounded-full">
+					{#if auth.user?.picture}
+						<img src={auth.user.picture} alt="Profile" class="h-full w-full object-cover" />
+					{:else}
+						<span class="flex h-full w-full items-center justify-center font-black text-primary">
+							{auth.user ? getInitials(auth.user.name) : 'U'}
+						</span>
+					{/if}
+				</div>
+
+				{#if needsPhone}
+					<div
+						class="absolute -top-0.5 -right-0.5 z-10 h-3.5 w-3.5 animate-pulse rounded-full border-2 border-background bg-error shadow-sm"
+					></div>
 				{/if}
 			</button>
 		</div>

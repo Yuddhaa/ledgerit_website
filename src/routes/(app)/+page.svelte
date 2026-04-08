@@ -66,21 +66,29 @@
 		<div class="flex items-center gap-3">
 			<button
 				onclick={() => (ui.showUniversalSettings = true)}
-				class="flex h-10 w-12 items-center justify-center rounded-full bg-surface-high text-primary transition-transform hover:cursor-pointer active:scale-90"
+				class="flex items-center justify-center rounded-full bg-surface-high text-primary transition-transform hover:cursor-pointer active:scale-90"
 			>
-				{#if auth.user?.picture}
-					<img
-						src={auth.user.picture}
-						alt={auth.user.name}
-						class="h-12 w-12 rounded-full border-2 border-primary/20 object-cover"
-					/>
-				{:else}
-					<div
-						class="flex h-12 w-12 items-center justify-center rounded-full bg-primary font-black text-background"
-					>
-						{auth.user ? getInitials(auth.user.name) : 'U'}
-					</div>
-				{/if}
+				<div class="relative flex h-12 w-12">
+					{#if auth.user?.picture}
+						<img
+							src={auth.user.picture}
+							alt={auth.user.name}
+							class="h-12 w-12 rounded-full border-2 border-primary/20 object-cover"
+						/>
+					{:else}
+						<div
+							class="flex h-12 w-12 items-center justify-center rounded-full bg-primary font-black text-background"
+						>
+							{auth.user ? getInitials(auth.user.name) : 'U'}
+						</div>
+					{/if}
+
+					{#if !auth.user!.phone_number}
+						<div
+							class="absolute -top-0.5 -right-0.5 z-10 h-4 w-4 animate-pulse rounded-full border-2 border-background bg-error shadow-lg"
+						></div>
+					{/if}
+				</div>
 			</button>
 			<h1 class="text-2xl font-black tracking-tight text-text-primary">
 				{auth.user?.name ?? 'My Business'}
