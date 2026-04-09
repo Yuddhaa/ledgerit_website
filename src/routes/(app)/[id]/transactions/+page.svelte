@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { Plus, RefreshCw, Trash2, Wallet, X, Filter, Check } from 'lucide-svelte';
-	import { fade, slide } from 'svelte/transition';
-	import { goto, invalidate } from '$app/navigation';
+	import { fade } from 'svelte/transition';
+	import { invalidate } from '$app/navigation';
 	import transactionsApi from '$lib/api/transactionsApi';
 	import {
 		transactionStore,
 		isClrearFilterActive,
 		businessStore
 	} from '$lib/stores/store.svelte.js';
-	import { log } from '$lib/utils/helpers';
 	import type { transaction, tranStats } from '$lib/utils/types.js';
 	import Toast from '$lib/components/Toast.svelte';
 	import TranFilter from '$lib/components/TranFilter.svelte';
 	import TranDetail from '$lib/components/TranDetail.svelte';
+	import ExportPdfButton from '$lib/components/ExportPdfButton.svelte'; // [NEW IMPORT]
 
 	let { data } = $props();
 
@@ -129,6 +129,12 @@
 
 		<div class="flex gap-3">
 			{#await activePromise then res}
+				<ExportPdfButton
+					transactions={res.transactions || []}
+					stats={res.stats}
+					businessName={businessStore.selected?.name || 'My Business'}
+				/>
+
 				<button
 					disabled={refreshing}
 					onclick={onRefresh}
@@ -168,9 +174,9 @@
 			></div>
 		</div>
 	{:then res: {
-        stats: tranStats;
-        transactions: transaction[];
-    }}
+        stats: tranStats;
+        transactions: transaction[];
+    }}
 		<div class="mb-10 rounded-4xl border border-outline-variant bg-surface p-6 shadow-sm">
 			<div class="flex items-center justify-between">
 				<div class="space-y-1">
